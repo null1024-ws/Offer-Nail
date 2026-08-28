@@ -41,9 +41,20 @@ const RANGE_FIELDS = {
 
 const HEADING_PATTERNS: Array<[RegExp, ResumeSection]> = [
   [/^(基本|个人)(信息|资料)$/, 'personal'],
+  [/^(自我评价|个人简介|个人总结)$/, 'personal'],
+  [/^(求职|应聘)(意向|目标)$/, 'jobPreference'],
   [/^教育(经历|背景)?$/, 'education'],
   [/^(实习|工作|任职)(经历|经验)?$/, 'employment'],
   [/^项目(经历|经验)?$/, 'project'],
+  [/^(研究|科研)(经历|经验|工作|成果|论文)?$/, 'research'],
+  [/^(发表)?论文$/, 'research'],
+  [/^学术(成果|论文)?$/, 'research'],
+  [/^(获奖|荣誉|奖项|奖励)(情况|经历)?$/, 'award'],
+  [/^所获(荣誉|奖励)?$/, 'award'],
+  [/^(校园|学生|社团)(经历|工作|活动)?$/, 'campus'],
+  [/^(志愿)(服务|经历|活动)?$/, 'volunteer'],
+  [/^(培训)(经历|课程)?$/, 'training'],
+  [/^(证书|资格)(证书|情况)?$/, 'certificate'],
   [/^语言(能力)?$/, 'language'],
   [/^(专业)?技能$/, 'skill'],
   [/^作品(展示|集)?$/, 'portfolio'],
@@ -54,7 +65,7 @@ const PHONE_RE = /(?<!\d)(1[3-9]\d{9})(?!\d)/;
 const GITHUB_RE = /(?:https?:\/\/)?(?:www\.)?github\.com\/[A-Za-z0-9_.-]+\/?/i;
 const URL_RE = /https?:\/\/[^\s|]+/i;
 const DATE_RE =
-  /(?:(?:19|20)\d{2}年(?:0?[1-9]|1[0-2])月(?:(?:0?[1-9]|[12]\d|3[01])日?)?|(?:19|20)\d{2}\.(?:0?[1-9]|1[0-2])(?:\.(?:0?[1-9]|[12]\d|3[01]))?|(?:19|20)\d{2}\/(?:0?[1-9]|1[0-2])(?:\/(?:0?[1-9]|[12]\d|3[01]))?|(?:19|20)\d{2}-(?:0?[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\d|3[01])(?!\d))?|(?:19|20)\d{2})/;
+  /(?:(?:19|20)\d{2}年(?:1[0-2]|0?[1-9])月(?:(?:3[01]|[12]\d|0?[1-9])日?)?|(?:19|20)\d{2}\.(?:1[0-2]|0?[1-9])(?:\.(?:3[01]|[12]\d|0?[1-9]))?|(?:19|20)\d{2}\/(?:1[0-2]|0?[1-9])(?:\/(?:3[01]|[12]\d|0?[1-9]))?|(?:19|20)\d{2}-(?:1[0-2]|0?[1-9])(?:-(?:3[01]|[12]\d|0[1-9])(?!\d))?|(?:19|20)\d{2})/;
 const RANGE_RE = new RegExp(
   `${DATE_RE.source}\\s*[-–—~至到]\\s*(?:${DATE_RE.source}|至今|现在|present)`,
   'i',
@@ -77,7 +88,7 @@ function detectHeading(text: string): ResumeSection | undefined {
   return undefined;
 }
 
-function parseDate(text: string): DateValue | undefined {
+export function parseDate(text: string): DateValue | undefined {
   const token = text.match(DATE_RE)?.[0];
   if (!token) return undefined;
   const parts = token.split(/[./]|年|月|日|-/).filter(Boolean);
@@ -90,7 +101,7 @@ function parseDate(text: string): DateValue | undefined {
   return { precision: 'year', year };
 }
 
-function parseRange(text: string): FieldValue | undefined {
+export function parseRange(text: string): FieldValue | undefined {
   const match = text.match(RANGE_RE);
   if (!match) return undefined;
   const raw = match[0];

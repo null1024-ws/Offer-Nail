@@ -58,9 +58,9 @@ export class VaultSession<TPayload extends object> {
 
   async unlock(
     vault: EncryptedVault,
-    password: string,
+    secret: string,
   ): Promise<VaultSessionSnapshot> {
-    const payload = await decryptVault<TPayload>(vault, password);
+    const payload = await decryptVault<TPayload>(vault, secret);
     const snapshot = {
       state: 'unlocked' as const,
       sessionId: crypto.randomUUID(),

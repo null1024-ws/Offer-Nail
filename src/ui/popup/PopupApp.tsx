@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Unlock } from '../onboarding/Unlock';
 import { FillPreview } from '../fill/FillPreview';
 import type { ResumeData } from '../../domain/resume/schema';
 import type { FillOutcome } from '../../fill-engine/adapters';
@@ -59,30 +58,30 @@ export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
       <main>
         <p className="eyebrow">Offer-Nail</p>
         <h1>先建立本地档案</h1>
-        <p>填写前需要在设置页创建主密码和简历档案。插件不会自动提交申请。</p>
-        <button type="button" onClick={openOptions}>
-          打开设置页
-        </button>
+        <p>填写前需要在设置页创建简历档案。插件不会自动提交申请。</p>
+        <div className="actions">
+          <button type="button" onClick={openOptions}>
+            打开设置页
+          </button>
+        </div>
       </main>
     );
   }
 
   if (status === 'locked') {
     return (
-      <Unlock
-        onUnlock={async (password) => {
-          const response = await sendMessage({
-            type: 'offerNail:unlock',
-            password,
-          });
-          if (!response.ok || !('status' in response)) {
-            throw new Error('unlock-failed');
-          }
-          setProfileName(response.profileName ?? '');
-          setVariants(response.variants ?? []);
-          setStatus('ready');
-        }}
-      />
+      <main>
+        <p className="eyebrow">Offer-Nail</p>
+        <h1>无法打开现有档案</h1>
+        <p>
+          本地数据无法自动读取。请打开设置页清除后重新创建，全程不需要密码。
+        </p>
+        <div className="actions">
+          <button type="button" onClick={openOptions}>
+            打开设置页
+          </button>
+        </div>
+      </main>
     );
   }
 
@@ -153,30 +152,32 @@ export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
           {error}
         </p>
       )}
-      <button
-        type="button"
-        onClick={async () => {
-          setError(undefined);
-          const response = await sendMessage({
-            type: 'offerNail:scan',
-            variantId: variantId || undefined,
-          });
-          if (!response.ok || !('items' in response)) {
-            setError(!response.ok ? response.error : '扫描失败');
-            return;
-          }
-          setResume(response.resume);
-          setItems(response.items);
-          setOutcomes(undefined);
-          setUndoMessage(undefined);
-          setStatus('preview');
-        }}
-      >
-        扫描当前页
-      </button>
-      <button type="button" className="secondary" onClick={openOptions}>
-        打开设置页
-      </button>
+      <div className="actions">
+        <button
+          type="button"
+          onClick={async () => {
+            setError(undefined);
+            const response = await sendMessage({
+              type: 'offerNail:scan',
+              variantId: variantId || undefined,
+            });
+            if (!response.ok || !('items' in response)) {
+              setError(!response.ok ? response.error : '扫描失败');
+              return;
+            }
+            setResume(response.resume);
+            setItems(response.items);
+            setOutcomes(undefined);
+            setUndoMessage(undefined);
+            setStatus('preview');
+          }}
+        >
+          扫描当前页
+        </button>
+        <button type="button" className="secondary" onClick={openOptions}>
+          打开设置页
+        </button>
+      </div>
     </main>
   );
 }

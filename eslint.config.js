@@ -11,6 +11,8 @@ export default tseslint.config(
       '.wxt/**',
       'coverage/**',
       'node_modules/**',
+      'public/**',
+      'vendor/**',
     ],
   },
   js.configs.recommended,

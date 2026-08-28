@@ -16,7 +16,12 @@ describe('VaultBackup', () => {
           clearAll: async () => undefined,
         }}
         session={{ lock: async () => undefined }}
-        password="correct horse 1234"
+        secrets={{
+          read: async () => 'device-secret-for-tests-32bytes-min!!',
+          write: async () => undefined,
+          clear: async () => undefined,
+          getOrCreate: async () => 'device-secret-for-tests-32bytes-min!!',
+        }}
         onRestored={onRestored}
         onReset={vi.fn()}
       />,

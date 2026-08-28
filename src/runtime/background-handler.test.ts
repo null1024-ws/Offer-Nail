@@ -5,6 +5,7 @@ import {
   loadFixtureDocument,
   seededResume,
 } from '../fill-engine/__fixtures__/form-fixture';
+import { MemoryDeviceSecretStore } from '../vault/device-secret';
 import { initializeNewVault } from '../vault/initialize';
 import { saveProfile } from '../vault/profile-vault';
 import { VaultRepository } from '../vault/repository';
@@ -37,20 +38,21 @@ describe('background fill handler', () => {
     const repository = new VaultRepository({
       databaseName: `offer-nail-bg-${crypto.randomUUID()}`,
     });
-    const password = 'correct horse 1234';
-    const created = await initializeNewVault(repository, password);
-    await saveProfile(repository, seededResume(), password);
+    const secrets = new MemoryDeviceSecretStore();
+    const created = await initializeNewVault(repository, secrets);
+    await saveProfile(repository, seededResume(), secrets);
     const session = new VaultSession<ResumeData>(new MemoryMarkerStore());
     await session.initialize();
     const handle = createBackgroundHandler({
       session,
       repository,
+      secrets,
       getActiveTabId: async () => 1,
       ensureScript: async () => undefined,
       sendToTab: async (_tabId, message) => content(message),
     });
 
-    const unlocked = await handle({ type: 'offerNail:unlock', password });
+    const unlocked = await handle({ type: 'offerNail:status' });
     expect(unlocked.ok && 'status' in unlocked && unlocked.status).toBe(
       'unlocked',
     );

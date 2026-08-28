@@ -7,9 +7,17 @@ node_modules/
 Thumbs.db
 coverage/
 
+# Generated parser assets copied at build time
+/public/pdf.worker.min.mjs
+/public/tesseract/
+/public/tessdata/
+
 # Local agent process — not part of the published extension
 .agents/
 memory-bank/
 skills-lock.json
 AGENTS.md
 PRD.md
+
+# Local test resumes (personal data)
+/CV/

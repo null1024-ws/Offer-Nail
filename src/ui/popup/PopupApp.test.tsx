@@ -20,6 +20,17 @@ describe('PopupApp', () => {
     expect(openOptions).toHaveBeenCalledOnce();
   });
 
+  it('sends unreadable vaults to the options page', async () => {
+    const sendMessage = vi.fn<
+      (request: ExtensionRequest) => Promise<ExtensionResponse>
+    >(async () => ({ ok: true, status: 'locked' }));
+    const openOptions = vi.fn();
+    render(<PopupApp sendMessage={sendMessage} openOptions={openOptions} />);
+    expect(await screen.findByText('无法打开现有档案')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: '打开设置页' }));
+    expect(openOptions).toHaveBeenCalledOnce();
+  });
+
   it('scans then confirms only after the user clicks', async () => {
     const resume = createEmptyResumeData();
     const sendMessage = vi.fn<

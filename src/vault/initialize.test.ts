@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { decryptVault, encryptVault, type EncryptedVault } from './crypto';
+import { MemoryDeviceSecretStore } from './device-secret';
 import {
   initializeNewVault,
-  masterPasswordError,
   type InitializationRepository,
 } from './initialize';
 
@@ -19,42 +19,35 @@ class MemoryRepository implements InitializationRepository {
 }
 
 describe('vault initialization', () => {
-  it('creates a valid encrypted empty profile without storing the password', async () => {
+  it('creates a valid encrypted empty profile with a device secret', async () => {
     const repository = new MemoryRepository();
-    const password = 'secure-password-123';
+    const secrets = new MemoryDeviceSecretStore();
     const resumeData = await initializeNewVault(
       repository,
-      password,
+      secrets,
       '前端校招',
     );
 
     expect(resumeData.masterProfile.name).toBe('前端校招');
     expect(resumeData.masterProfile.educations).toEqual([]);
-    expect(JSON.stringify(repository.vault)).not.toContain(password);
-    await expect(decryptVault(repository.vault!, password)).resolves.toEqual(
+    const secret = await secrets.read();
+    expect(secret).toBeDefined();
+    expect(JSON.stringify(repository.vault)).not.toContain(secret);
+    await expect(decryptVault(repository.vault!, secret!)).resolves.toEqual(
       resumeData,
     );
   });
 
-  it('rejects weak passwords and refuses to overwrite an existing vault', async () => {
-    expect(masterPasswordError('short1')).toBe('主密码至少需要 12 个字符');
-    expect(masterPasswordError('long-password-only')).toBe(
-      '主密码需要同时包含字母和数字',
-    );
-
+  it('refuses to overwrite an existing vault', async () => {
     const repository = new MemoryRepository();
-    await expect(
-      initializeNewVault(repository, 'weak', '默认档案'),
-    ).rejects.toMatchObject({ code: 'WEAK_PASSWORD' });
-    expect(repository.vault).toBeUndefined();
-
-    repository.vault = await encryptVault({ existing: true }, 'old-password1', {
+    const secrets = new MemoryDeviceSecretStore();
+    repository.vault = await encryptVault({ existing: true }, 'old-secret', {
       iterations: 100,
     });
     const existing = repository.vault;
-    await expect(
-      initializeNewVault(repository, 'secure-password-123'),
-    ).rejects.toMatchObject({ code: 'ALREADY_INITIALIZED' });
+    await expect(initializeNewVault(repository, secrets)).rejects.toMatchObject(
+      { code: 'ALREADY_INITIALIZED' },
+    );
     expect(repository.vault).toBe(existing);
   });
 });

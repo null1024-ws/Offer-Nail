@@ -54,7 +54,7 @@ describe('FillPreview', () => {
     );
 
     expect(screen.getAllByText('高置信').length).toBeGreaterThan(0);
-    expect(screen.getByText(/· 敏感/)).toBeVisible();
+    expect(screen.getByText(/，敏感/)).toBeVisible();
     await user.click(screen.getByRole('button', { name: '取消' }));
     expect(onCancel).toHaveBeenCalledOnce();
     expect(onConfirm).not.toHaveBeenCalled();

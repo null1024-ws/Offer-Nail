@@ -64,8 +64,8 @@ export function FillPreview({
                 </label>
                 <p className="field-meta">
                   {confidenceLabel(item.confidence)}
-                  {item.sensitive ? ' · 敏感' : ''}
-                  {item.conflict ? ' · 页面已有值' : ''}
+                  {item.sensitive ? '，敏感' : ''}
+                  {item.conflict ? '，页面已有值' : ''}
                 </p>
                 {item.mappingOptions.length > 0 && (
                   <label>

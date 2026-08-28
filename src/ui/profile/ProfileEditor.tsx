@@ -113,7 +113,7 @@ export function ProfileEditor({ initialValue, onSave }: ProfileEditorProps) {
             <header>
               <div>
                 <h2>招聘合规与声明</h2>
-                <small>敏感类别 · 默认关闭</small>
+                <small>敏感类别，默认关闭</small>
               </div>
               <button
                 type="button"
@@ -147,7 +147,7 @@ export function ProfileEditor({ initialValue, onSave }: ProfileEditorProps) {
             <header>
               <div>
                 <h2>推荐人/证明人</h2>
-                <small>高度敏感 · 默认关闭</small>
+                <small>高度敏感，默认关闭</small>
               </div>
               <button
                 type="button"
@@ -363,7 +363,7 @@ function FieldEditor({
           />
         )}
         <span className="field-meta">
-          {definition.kind === 'stringList' ? '多项 · 每行一项' : section}
+          {definition.kind === 'stringList' ? '多项，每行一项' : section}
           {' · '}
           {sensitivity ? '每次填写前确认' : '允许自动填写'}
         </span>

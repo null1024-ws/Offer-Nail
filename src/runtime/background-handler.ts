@@ -10,6 +10,7 @@ import {
   type PageFillPlan,
 } from '../fill-engine';
 import type { PageCollection } from '../page-mapping/collector';
+import type { DeviceSecretStore } from '../vault/device-secret';
 import type { VaultRepository } from '../vault/repository';
 import { VaultLockedError, type VaultSession } from '../vault/session';
 import type { ExtensionRequest, ExtensionResponse } from './protocol';
@@ -17,6 +18,7 @@ import type { ExtensionRequest, ExtensionResponse } from './protocol';
 export interface BackgroundFillDeps {
   session: VaultSession<ResumeData>;
   repository: VaultRepository;
+  secrets: DeviceSecretStore;
   getActiveTabId: () => Promise<number>;
   ensureScript: (tabId: number) => Promise<void>;
   sendToTab: (tabId: number, message: ExtensionRequest) => Promise<unknown>;
@@ -41,6 +43,28 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
     return response;
   }
 
+  async function unlockedStatus(): Promise<ExtensionResponse> {
+    const data = deps.session.requirePayload();
+    return {
+      ok: true,
+      status: 'unlocked',
+      profileName: data.masterProfile.name,
+      variants: data.profileVariants.map((variant) => ({
+        id: variant.id,
+        name: variant.name,
+      })),
+    };
+  }
+
+  async function ensureOpen() {
+    if (deps.session.getSnapshot().state === 'unlocked') return;
+    const vault = await deps.repository.readVault();
+    if (!vault) throw new Error('还没有本地保险库，请先打开设置页。');
+    await deps.session.unlock(vault, await deps.secrets.getOrCreate());
+    const migrated = migrateResumeData(deps.session.requirePayload());
+    deps.session.replacePayload(migrated);
+  }
+
   return async function handle(
     request: ExtensionRequest,
   ): Promise<ExtensionResponse> {
@@ -48,37 +72,12 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
       if (request.type === 'offerNail:status') {
         const vault = await deps.repository.readVault();
         if (!vault) return { ok: true, status: 'uninitialized' };
-        if (deps.session.getSnapshot().state !== 'unlocked') {
+        try {
+          await ensureOpen();
+          return unlockedStatus();
+        } catch {
           return { ok: true, status: 'locked' };
         }
-        const data = deps.session.requirePayload();
-        return {
-          ok: true,
-          status: 'unlocked',
-          profileName: data.masterProfile.name,
-          variants: data.profileVariants.map((variant) => ({
-            id: variant.id,
-            name: variant.name,
-          })),
-        };
-      }
-
-      if (request.type === 'offerNail:unlock') {
-        const vault = await deps.repository.readVault();
-        if (!vault)
-          return { ok: false, error: '还没有本地保险库，请先打开设置页。' };
-        await deps.session.unlock(vault, request.password);
-        const migrated = migrateResumeData(deps.session.requirePayload());
-        deps.session.replacePayload(migrated);
-        return {
-          ok: true,
-          status: 'unlocked',
-          profileName: migrated.masterProfile.name,
-          variants: migrated.profileVariants.map((variant) => ({
-            id: variant.id,
-            name: variant.name,
-          })),
-        };
       }
 
       if (request.type === 'offerNail:lock') {
@@ -88,13 +87,17 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
       }
 
       if (request.type === 'offerNail:replacePayload') {
-        if (deps.session.getSnapshot().state === 'unlocked') {
+        try {
+          await ensureOpen();
           deps.session.replacePayload(request.data);
+        } catch {
+          // Options can persist first; the next status will open the vault.
         }
         return { ok: true };
       }
 
       if (request.type === 'offerNail:scan') {
+        await ensureOpen();
         const data = resumeForFill(
           deps.session.requirePayload(),
           request.variantId,
@@ -152,7 +155,7 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
       return { ok: false, error: '未知请求' };
     } catch (error) {
       if (error instanceof VaultLockedError) {
-        return { ok: false, error: '请先解锁本地保险库。' };
+        return { ok: false, error: '请先打开本地保险库。' };
       }
       return {
         ok: false,

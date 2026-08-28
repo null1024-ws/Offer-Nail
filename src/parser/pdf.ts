@@ -1,9 +1,11 @@
 import {
   getDocument,
+  GlobalWorkerOptions,
   InvalidPDFException,
   PasswordException,
   type PDFDocumentProxy,
 } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { isLocalOcrAvailable, type OcrImageSource } from './ocr-runtime';
 
 export type PdfExtractionErrorCode =
   'NO_TEXT_LAYER' | 'PASSWORD_PROTECTED' | 'DAMAGED';
@@ -30,6 +32,10 @@ export interface PdfExtraction {
   blocks: PdfTextBlock[];
 }
 
+export interface ExtractPdfOptions {
+  recognizeImage?: (image: OcrImageSource) => Promise<string>;
+}
+
 const OFFLINE_OPTIONS = {
   disableAutoFetch: true,
   disableRange: true,
@@ -53,7 +59,7 @@ function hasEncryptDictionary(input: Uint8Array): boolean {
 
 function userMessage(code: PdfExtractionErrorCode): string {
   if (code === 'NO_TEXT_LAYER') {
-    return '这份 PDF 可能是扫描件，当前不支持 OCR，请改为手动录入。文件不会被保留。';
+    return '这份 PDF 可能是扫描件，未能识别出文字。请换更清晰的文件或改为手动录入。文件不会被保留。';
   }
   if (code === 'PASSWORD_PROTECTED') {
     return '这份 PDF 受密码保护，无法提取文本。文件不会被保留。';
@@ -73,6 +79,61 @@ function toError(error: unknown, input: Uint8Array): PdfExtractionError {
     return new PdfExtractionError('DAMAGED', userMessage('DAMAGED'));
   }
   return new PdfExtractionError('DAMAGED', userMessage('DAMAGED'));
+}
+
+function ensurePdfWorker() {
+  if (GlobalWorkerOptions.workerSrc) return;
+  const runtime = (
+    globalThis as {
+      browser?: { runtime?: { getURL?: (path: string) => string } };
+    }
+  ).browser?.runtime;
+  if (!runtime?.getURL) return;
+  GlobalWorkerOptions.workerSrc = runtime.getURL('/pdf.worker.min.mjs');
+}
+
+function blocksFromOcrText(pageNumber: number, text: string): PdfTextBlock[] {
+  return text
+    .split(/\r?\n/)
+    .map((line, index) => ({
+      pageNumber,
+      text: line.trim(),
+      x: 0,
+      y: index,
+    }))
+    .filter((block) => block.text.length > 0);
+}
+
+async function resolveRecognizer(
+  provided?: ExtractPdfOptions['recognizeImage'],
+): Promise<ExtractPdfOptions['recognizeImage'] | undefined> {
+  if (provided) return provided;
+  if (!isLocalOcrAvailable()) return undefined;
+  const { recognizeLocalImage } = await import('./ocr');
+  return recognizeLocalImage;
+}
+
+async function ocrPdfPages(
+  pdf: PDFDocumentProxy,
+  recognizeImage: NonNullable<ExtractPdfOptions['recognizeImage']>,
+): Promise<PdfTextBlock[]> {
+  const host = globalThis.document;
+  if (typeof host?.createElement !== 'function') return [];
+
+  const blocks: PdfTextBlock[] = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = host.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return [];
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    await page.render({ canvas, canvasContext: context, viewport }).promise;
+    const text = await recognizeImage(canvas);
+    blocks.push(...blocksFromOcrText(pageNumber, text));
+  }
+  return blocks;
 }
 
 async function extractBlocks(
@@ -99,11 +160,13 @@ async function extractBlocks(
 
 export async function extractPdfText(
   input: Uint8Array,
+  options: ExtractPdfOptions = {},
 ): Promise<PdfExtraction> {
   if (input.byteLength === 0) {
     throw new PdfExtractionError('DAMAGED', userMessage('DAMAGED'));
   }
 
+  ensurePdfWorker();
   const loadingTask = getDocument({
     data: copyBytes(input),
     ...OFFLINE_OPTIONS,
@@ -112,13 +175,17 @@ export async function extractPdfText(
   try {
     pdf = await loadingTask.promise;
     const blocks = await extractBlocks(pdf);
-    if (blocks.length === 0) {
-      throw new PdfExtractionError(
-        'NO_TEXT_LAYER',
-        userMessage('NO_TEXT_LAYER'),
-      );
+    if (blocks.length > 0) {
+      return { pageCount: pdf.numPages, blocks };
     }
-    return { pageCount: pdf.numPages, blocks };
+    const recognizeImage = await resolveRecognizer(options.recognizeImage);
+    const ocrBlocks = recognizeImage
+      ? await ocrPdfPages(pdf, recognizeImage)
+      : [];
+    if (ocrBlocks.length > 0) {
+      return { pageCount: pdf.numPages, blocks: ocrBlocks };
+    }
+    throw new PdfExtractionError('NO_TEXT_LAYER', userMessage('NO_TEXT_LAYER'));
   } catch (error) {
     throw toError(error, input);
   } finally {

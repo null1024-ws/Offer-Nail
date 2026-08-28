@@ -7,7 +7,6 @@ import type { PageCollection } from '../page-mapping/collector';
 export type ExtensionRequest =
   | { type: 'offerNail:ping' }
   | { type: 'offerNail:status' }
-  | { type: 'offerNail:unlock'; password: string }
   | { type: 'offerNail:lock' }
   | { type: 'offerNail:replacePayload'; data: ResumeData }
   | { type: 'offerNail:scan'; variantId?: string }

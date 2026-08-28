@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   ALLOWED_CONTENT_SCRIPT_MATCHES,
+  ALLOWED_HOST_PERMISSIONS,
   ALLOWED_PERMISSIONS,
   FORBIDDEN_PERMISSIONS,
 } from './policy';
@@ -52,7 +53,7 @@ function auditPack(directory: string) {
     content_scripts?: Array<{ matches: string[] }>;
   };
   expect(manifest.permissions).toEqual([...ALLOWED_PERMISSIONS]);
-  expect(manifest.host_permissions ?? []).toEqual([]);
+  expect(manifest.host_permissions ?? []).toEqual([...ALLOWED_HOST_PERMISSIONS]);
   FORBIDDEN_PERMISSIONS.forEach((permission) => {
     expect(manifest.permissions ?? []).not.toContain(permission);
   });

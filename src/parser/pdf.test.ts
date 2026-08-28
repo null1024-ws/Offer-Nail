@@ -77,4 +77,26 @@ describe('extractPdfText', () => {
       message: expect.stringContaining('损坏'),
     });
   });
+
+  it('extracts text from local CV sample PDFs', async () => {
+    const { existsSync, readFileSync } = await import('node:fs');
+    const { dirname, join } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
+    const samples = ['CV/CV_V1.pdf', 'CV/resume.pdf'];
+    let checked = 0;
+    for (const relative of samples) {
+      const path = join(root, relative);
+      if (!existsSync(path)) continue;
+      checked += 1;
+      const result = await extractPdfText(new Uint8Array(readFileSync(path)));
+      expect(result.pageCount).toBeGreaterThan(0);
+      expect(
+        result.blocks.some((block) =>
+          /教育|香港城市大学|计算机/.test(block.text),
+        ),
+      ).toBe(true);
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
 });

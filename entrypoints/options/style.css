@@ -1,157 +1,66 @@
-:root {
-  color: #172033;
-  background: #f7f3e8;
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
-}
+@import '../../src/ui/theme.css';
 
-body {
-  margin: 0;
+:root {
+  font-size: 16px;
 }
 
 main {
-  max-width: 760px;
+  max-width: 880px;
   margin: 0 auto;
-  padding: 64px 24px;
+  padding: 40px 24px 80px;
 }
 
-.eyebrow {
-  margin: 0 0 12px;
-  color: #315b7d;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.options-shell {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
 }
 
-h1 {
+.page-head {
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+}
+
+.page-head .lead {
   margin: 0;
-  font-size: clamp(32px, 6vw, 56px);
-}
-
-p {
-  max-width: 640px;
-  line-height: 1.7;
-}
-
-.lead {
-  color: #4c5568;
-  font-size: 18px;
-}
-
-section {
-  margin-top: 40px;
-  border: 1px solid #d9d1bd;
-  border-radius: 12px;
-  padding: 24px;
-  background: #fffdf7;
-}
-
-h2 {
-  margin-top: 0;
 }
 
 form {
   display: grid;
-  gap: 20px;
-  max-width: 560px;
-  margin-top: 40px;
-  border: 1px solid #d9d1bd;
-  border-radius: 14px;
-  padding: 28px;
-  background: #fffdf7;
+  gap: 16px;
+  max-width: 28rem;
+  margin-top: 24px;
 }
 
-label {
-  display: grid;
-  gap: 8px;
-  font-weight: 700;
-}
-
-input,
-select {
-  box-sizing: border-box;
-  width: 100%;
-  border: 1px solid #9aa1ad;
-  border-radius: 8px;
-  padding: 11px 12px;
-  color: inherit;
-  background: white;
-  font: inherit;
-}
-
-textarea {
-  box-sizing: border-box;
-  width: 100%;
-  resize: vertical;
-  border: 1px solid #9aa1ad;
-  border-radius: 8px;
-  padding: 11px 12px;
-  font: inherit;
-}
-
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid rgb(49 91 125 / 25%);
-  outline-offset: 1px;
-  border-color: #315b7d;
-}
-
-.hint {
-  margin: -12px 0 0;
-  color: #626b7c;
-  font-size: 14px;
-}
-
-.acknowledgement {
-  grid-template-columns: 20px 1fr;
-  align-items: start;
-  font-weight: 500;
-  line-height: 1.6;
-}
-
-.acknowledgement input {
-  margin-top: 4px;
-}
-
-.error {
-  margin: 0;
-  color: #a12828;
-  font-weight: 700;
-}
-
-button {
-  border: 0;
-  border-radius: 8px;
-  padding: 12px 16px;
-  color: white;
-  background: #315b7d;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 700;
-}
-
-button:disabled {
-  cursor: wait;
-  opacity: 0.65;
+form .hint {
+  margin-top: -8px;
 }
 
 .profile-form {
   max-width: none;
-  border: 0;
-  padding: 0;
+  margin-top: 0;
+}
+
+section,
+.resume-import,
+.import-review,
+.fill-preview,
+.vault-backup,
+.variant-manager,
+.site-rules {
+  margin: 24px 0 0;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--border);
   background: transparent;
 }
 
 .profile-form section {
-  margin: 0;
+  margin: 24px 0 0;
+  padding: 20px 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
 }
 
 .profile-form section > header {
@@ -166,15 +75,15 @@ button:disabled {
 }
 
 .profile-form article {
-  margin-top: 20px;
-  border-top: 1px solid #e3dccb;
-  padding-top: 20px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 .field-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
 .date-range {
@@ -183,57 +92,22 @@ button:disabled {
   gap: 8px;
 }
 
-.field-meta {
-  color: #626b7c;
-  font-size: 12px;
-  font-weight: 500;
-}
-
 .sensitive-section {
-  border-color: #c98a62;
-  background: #fff8ef;
+  border-top: 2px solid var(--accent);
 }
 
 .full-width {
   grid-column: 1 / -1;
 }
 
-.inline-check {
-  grid-template-columns: 20px 1fr;
-  align-items: center;
-}
-
-.inline-check input {
-  width: auto;
-}
-
 small {
-  color: #8a4d25;
-  font-weight: 600;
-}
-
-.item-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .item-actions button,
 .profile-form section > header button {
-  border: 1px solid #9aa1ad;
   padding: 8px 12px;
-  color: #315b7d;
-  background: white;
-}
-
-.options-shell {
-  max-width: 760px;
-  margin: 0 auto;
-}
-
-.variant-manager,
-.site-rules {
-  margin: 40px 24px 0;
 }
 
 .variant-create,
@@ -244,8 +118,8 @@ small {
 
 .variant-fields {
   display: grid;
-  gap: 20px;
-  margin-top: 24px;
+  gap: 16px;
+  margin-top: 16px;
 }
 
 .variant-field {
@@ -254,44 +128,16 @@ small {
 }
 
 .inherited-value {
-  color: #626b7c;
+  color: var(--muted);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
-.variant-order {
-  display: grid;
-  gap: 8px;
-  margin-top: 16px;
-}
-
+.variant-order,
 .variant-attachments {
   display: grid;
   gap: 8px;
   margin-top: 16px;
-  border: 1px dashed #d9d1bd;
-  padding: 16px;
-}
-
-.resume-import,
-.import-review,
-.fill-preview,
-.vault-backup {
-  margin: 40px 24px 0;
-}
-
-.import-list {
-  display: grid;
-  gap: 16px;
-  padding: 0;
-  list-style: none;
-}
-
-.import-list li {
-  display: grid;
-  gap: 8px;
-  border-top: 1px solid #e3dccb;
-  padding-top: 16px;
 }
 
 .import-candidate-grid {
@@ -299,9 +145,66 @@ small {
   gap: 12px;
 }
 
+.import-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.import-group-fields {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+  padding-left: 14px;
+  border-left: 2px solid var(--border);
+}
+
+.import-field {
+  display: grid;
+  gap: 8px;
+}
+
+.llm-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.llm-form .actions {
+  margin-top: 0;
+}
+
+.ok {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--accent-hover);
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
 @media (min-width: 640px) {
   .import-candidate-grid {
     grid-template-columns: 1fr 1fr;
     align-items: start;
+  }
+}
+
+@media (max-width: 768px) {
+  main,
+  .options-shell {
+    width: 100%;
+    padding: 24px 16px 64px;
+  }
+
+  .field-grid,
+  .date-range,
+  .import-candidate-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -13,6 +13,7 @@ import { collectPageFields } from '../page-mapping/collector';
 import { applyFill, undoFill } from '../fill-engine/apply';
 import { fillRequestFromPreview, planPageFill } from '../fill-engine/plan';
 import { loadFixtureDocument } from '../fill-engine/__fixtures__/form-fixture';
+import { MemoryDeviceSecretStore } from '../vault/device-secret';
 import { initializeNewVault } from '../vault/initialize';
 import { saveProfile, unlockProfile } from '../vault/profile-vault';
 import { exportEncryptedBackup, restoreEncryptedBackup } from '../vault/backup';
@@ -24,8 +25,8 @@ describe('MVP end-to-end flow', () => {
     const repository = new VaultRepository({
       databaseName: `offer-nail-mvp-${crypto.randomUUID()}`,
     });
-    const password = 'correct horse 1234';
-    const blank = await initializeNewVault(repository, password, '秋招档案');
+    const secrets = new MemoryDeviceSecretStore();
+    const blank = await initializeNewVault(repository, secrets, '秋招档案');
     const parsed = parseResumeCandidates(
       sourceLinesFromText(resumeTextFixture),
     );
@@ -47,7 +48,7 @@ describe('MVP end-to-end flow', () => {
       'personal.summary',
       { kind: 'text', value: '变体简介' },
     );
-    await saveProfile(repository, overridden, password);
+    await saveProfile(repository, overridden, secrets);
 
     const document = loadFixtureDocument();
     const fillResume = resumeForFill(overridden, variantId);
@@ -85,26 +86,29 @@ describe('MVP end-to-end flow', () => {
       (document.getElementById('full-name') as HTMLInputElement).value,
     ).toBe('');
 
-    const backup = await exportEncryptedBackup(repository);
+    const backup = await exportEncryptedBackup(repository, secrets);
     expect(backup).not.toContain('张三');
+    const restoreSecrets = new MemoryDeviceSecretStore();
     const restored = await restoreEncryptedBackup(
       backup,
-      password,
       new VaultRepository({
         databaseName: `offer-nail-mvp-restore-${crypto.randomUUID()}`,
       }),
+      restoreSecrets,
     );
     expect(restored.masterProfile.name).toBe('秋招档案');
+    const tampered = JSON.parse(backup) as { deviceSecret: string };
+    tampered.deviceSecret = 'x'.repeat(32);
     await expect(
       restoreEncryptedBackup(
-        backup,
-        'wrong-password-1234',
+        JSON.stringify(tampered),
         new VaultRepository({
           databaseName: `offer-nail-mvp-wrong-${crypto.randomUUID()}`,
         }),
+        new MemoryDeviceSecretStore(),
       ),
     ).rejects.toThrow();
-    expect(await unlockProfile(repository, password)).toMatchObject({
+    expect(await unlockProfile(repository, secrets)).toMatchObject({
       masterProfile: { name: '秋招档案' },
     });
     await repository.destroy();

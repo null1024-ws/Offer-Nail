@@ -3,6 +3,8 @@
 .wxt/
 coverage/
 node_modules/
+public/
+vendor/
 pnpm-lock.yaml
 skills-lock.json
 docs/*.html

@@ -9,6 +9,7 @@ import {
   type BackupRepository,
 } from './backup';
 import { decryptVault, encryptVault, type EncryptedVault } from './crypto';
+import { MemoryDeviceSecretStore } from './device-secret';
 
 class MemoryRepository implements BackupRepository {
   vault?: EncryptedVault;
@@ -28,66 +29,86 @@ class MemoryRepository implements BackupRepository {
   }
 }
 
-async function backupFixture(password = 'password') {
+async function backupFixture() {
+  const secrets = new MemoryDeviceSecretStore(
+    'device-secret-for-tests-32bytes-min!!',
+  );
   const repository = new MemoryRepository();
   repository.vault = await encryptVault(
     migrateResumeData(resumeV0Fixture),
-    password,
+    await secrets.getOrCreate(),
     { iterations: 100 },
   );
-  return exportEncryptedBackup(
-    repository,
-    () => new Date('2026-08-28T07:00:00.000Z'),
-  );
+  return {
+    secrets,
+    serialized: await exportEncryptedBackup(
+      repository,
+      secrets,
+      () => new Date('2026-08-28T07:00:00.000Z'),
+    ),
+  };
 }
 
 describe('encrypted backup', () => {
-  it('exports ciphertext and previews it only with the correct password', async () => {
-    const serialized = await backupFixture();
+  it('exports ciphertext and previews it with the embedded device secret', async () => {
+    const { serialized } = await backupFixture();
     expect(serialized).not.toContain('旧版默认档案');
-    await expect(
-      previewEncryptedBackup(serialized, 'password'),
-    ).resolves.toEqual({
+    await expect(previewEncryptedBackup(serialized)).resolves.toEqual({
       exportedAt: '2026-08-28T07:00:00.000Z',
       profileName: '旧版默认档案',
       schemaVersion: 1,
     });
+    const tampered = JSON.parse(serialized) as { deviceSecret: string };
+    tampered.deviceSecret = 'x'.repeat(32);
     await expect(
-      previewEncryptedBackup(serialized, 'wrong'),
+      previewEncryptedBackup(JSON.stringify(tampered)),
     ).rejects.toMatchObject({
       code: 'AUTHENTICATION_FAILED',
     });
   });
 
   it('validates and migrates before replacing the current vault', async () => {
+    const secrets = new MemoryDeviceSecretStore(
+      'device-secret-for-tests-32bytes-min!!',
+    );
     const source = new MemoryRepository();
-    source.vault = await encryptVault(resumeV0Fixture, 'password', {
-      iterations: 100,
-    });
-    const serialized = await exportEncryptedBackup(source);
+    source.vault = await encryptVault(
+      resumeV0Fixture,
+      (await secrets.read()) ?? (await secrets.getOrCreate()),
+      {
+        iterations: 100,
+      },
+    );
+    const serialized = await exportEncryptedBackup(source, secrets);
     const target = new MemoryRepository();
+    const targetSecrets = new MemoryDeviceSecretStore();
 
     const restored = await restoreEncryptedBackup(
       serialized,
-      'password',
       target,
+      targetSecrets,
     );
     expect(restored.schemaVersion).toBe(1);
-    await expect(decryptVault(target.vault!, 'password')).resolves.toEqual(
-      restored,
-    );
+    await expect(
+      decryptVault(target.vault!, await targetSecrets.getOrCreate()),
+    ).resolves.toEqual(restored);
   });
 
-  it('does not overwrite current data for wrong passwords or invalid versions', async () => {
+  it('does not overwrite current data for a tampered key or invalid versions', async () => {
     const target = new MemoryRepository();
     const existing = await encryptVault({ sentinel: 'existing' }, 'old', {
       iterations: 100,
     });
     target.vault = existing;
-    const serialized = await backupFixture();
+    const { serialized } = await backupFixture();
+    const targetSecrets = new MemoryDeviceSecretStore(
+      'local-secret-for-restore-32bytes-min!!',
+    );
+    const tampered = JSON.parse(serialized) as { deviceSecret: string };
+    tampered.deviceSecret = 'x'.repeat(32);
 
     await expect(
-      restoreEncryptedBackup(serialized, 'wrong', target),
+      restoreEncryptedBackup(JSON.stringify(tampered), target, targetSecrets),
     ).rejects.toBeTruthy();
     expect(target.vault).toBe(existing);
 
@@ -96,21 +117,25 @@ describe('encrypted backup', () => {
       backupVersion: 99,
     });
     await expect(
-      restoreEncryptedBackup(unsupported, 'password', target),
+      restoreEncryptedBackup(unsupported, target, targetSecrets),
     ).rejects.toMatchObject({ code: 'UNSUPPORTED_BACKUP_VERSION' });
     expect(target.vault).toBe(existing);
   });
 
-  it('locks the session before clearing local data', async () => {
+  it('locks the session and clears the device secret before wiping data', async () => {
     const repository = new MemoryRepository();
+    const secrets = new MemoryDeviceSecretStore(
+      'device-secret-for-tests-32bytes-min!!',
+    );
     repository.vault = await encryptVault({ secret: true }, 'password', {
       iterations: 100,
     });
     const lock = vi.fn(async () => undefined);
 
-    await resetLocalData(repository, { lock });
+    await resetLocalData(repository, { lock }, secrets);
     expect(lock).toHaveBeenCalledOnce();
     expect(repository.cleared).toBe(true);
     expect(repository.vault).toBeUndefined();
+    await expect(secrets.read()).resolves.toBeUndefined();
   });
 });

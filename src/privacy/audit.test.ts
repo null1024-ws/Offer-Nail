@@ -21,6 +21,8 @@ import {
 import { encryptVault, decryptVault } from '../vault/crypto';
 import {
   ALLOWED_CONTENT_SCRIPT_MATCHES,
+  ALLOWED_HOST_PERMISSIONS,
+  ALLOWED_NETWORK_FILES,
   ALLOWED_PERMISSIONS,
   ALLOWED_RUNTIME_DEPENDENCIES,
   FORBIDDEN_DEPENDENCY_HINTS,
@@ -78,7 +80,6 @@ describe('privacy audit', () => {
     expect(config).toContain(
       "permissions: ['activeTab', 'scripting', 'storage']",
     );
-    expect(config).not.toContain('host_permissions');
     expect(config).not.toContain('<all_urls>');
 
     const packageJson = JSON.parse(
@@ -102,7 +103,9 @@ describe('privacy audit', () => {
       const manifest = readManifest(browser);
       if (!manifest) return;
       expect(manifest.permissions).toEqual([...ALLOWED_PERMISSIONS]);
-      expect(manifest.host_permissions ?? []).toEqual([]);
+      expect(manifest.host_permissions ?? []).toEqual([
+        ...ALLOWED_HOST_PERMISSIONS,
+      ]);
       expect(manifest.optional_host_permissions ?? []).toEqual([]);
       FORBIDDEN_PERMISSIONS.forEach((permission) => {
         expect(manifest.permissions ?? []).not.toContain(permission);
@@ -129,7 +132,13 @@ describe('privacy audit', () => {
       } catch {
         return;
       }
-      expect(source, path).not.toMatch(NETWORK_CALL_PATTERN);
+      const normalized = path.replaceAll(sep, '/');
+      const isNetworkWhitelisted = ALLOWED_NETWORK_FILES.some((allowed) =>
+        normalized.endsWith(allowed),
+      );
+      if (!isNetworkWhitelisted) {
+        expect(source, path).not.toMatch(NETWORK_CALL_PATTERN);
+      }
       secrets.forEach((secret) => {
         expect(source, path).not.toContain(secret);
       });

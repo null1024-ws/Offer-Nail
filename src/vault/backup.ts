@@ -6,14 +6,16 @@ import {
   encryptedVaultSchema,
   type EncryptedVault,
 } from './crypto';
+import type { DeviceSecretStore } from './device-secret';
 
-const BACKUP_VERSION = 1 as const;
+const BACKUP_VERSION = 2 as const;
 
 export const encryptedBackupSchema = z.strictObject({
   format: z.literal('offer-nail-encrypted-backup'),
   backupVersion: z.literal(BACKUP_VERSION),
   exportedAt: z.iso.datetime(),
   vault: encryptedVaultSchema,
+  deviceSecret: z.string().min(32),
 });
 
 export type EncryptedBackup = z.infer<typeof encryptedBackupSchema>;
@@ -69,17 +71,26 @@ function parseBackup(serialized: string): EncryptedBackup {
 
 export async function exportEncryptedBackup(
   repository: BackupRepository,
+  secrets: DeviceSecretStore,
   now: () => Date = () => new Date(),
 ): Promise<string> {
   const vault = await repository.readVault();
   if (!vault) {
     throw new BackupError('INVALID_BACKUP', '当前没有可导出的保险库');
   }
+  const deviceSecret = await secrets.read();
+  if (!deviceSecret) {
+    throw new BackupError(
+      'INVALID_BACKUP',
+      '找不到本机密钥，无法导出可恢复的备份',
+    );
+  }
   return JSON.stringify({
     format: 'offer-nail-encrypted-backup',
     backupVersion: BACKUP_VERSION,
     exportedAt: now().toISOString(),
     vault,
+    deviceSecret,
   } satisfies EncryptedBackup);
 }
 
@@ -91,10 +102,9 @@ export interface BackupPreview {
 
 export async function previewEncryptedBackup(
   serialized: string,
-  password: string,
 ): Promise<BackupPreview> {
   const backup = parseBackup(serialized);
-  const payload = await decryptVault(backup.vault, password);
+  const payload = await decryptVault(backup.vault, backup.deviceSecret);
   const resumeData = migrateResumeData(payload);
   return {
     exportedAt: backup.exportedAt,
@@ -105,16 +115,20 @@ export async function previewEncryptedBackup(
 
 export async function restoreEncryptedBackup(
   serialized: string,
-  password: string,
   repository: BackupRepository,
+  secrets: DeviceSecretStore,
 ): Promise<ResumeData> {
   const backup = parseBackup(serialized);
-  const payload = await decryptVault(backup.vault, password);
+  const payload = await decryptVault(backup.vault, backup.deviceSecret);
   const migrated = migrateResumeData(payload);
-  const restoredVault = await encryptVault(migrated, password, {
-    iterations: backup.vault.kdfParameters.iterations,
-    existingCreatedAt: backup.vault.createdAt,
-  });
+  const restoredVault = await encryptVault(
+    migrated,
+    await secrets.getOrCreate(),
+    {
+      iterations: backup.vault.kdfParameters.iterations,
+      existingCreatedAt: backup.vault.createdAt,
+    },
+  );
   await repository.writeVault(restoredVault);
   return migrated;
 }
@@ -122,7 +136,9 @@ export async function restoreEncryptedBackup(
 export async function resetLocalData(
   repository: BackupRepository,
   session: LockableSession,
+  secrets: DeviceSecretStore,
 ): Promise<void> {
   await session.lock();
   await repository.clearAll();
+  await secrets.clear();
 }

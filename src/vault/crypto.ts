@@ -56,13 +56,13 @@ function fromBase64(value: string): Uint8Array<ArrayBuffer> {
 }
 
 async function deriveKey(
-  password: string,
+  secret: string,
   salt: Uint8Array<ArrayBuffer>,
   parameters: KdfParameters,
 ): Promise<CryptoKey> {
   const material = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(password),
+    encoder.encode(secret),
     'PBKDF2',
     false,
     ['deriveKey'],
@@ -90,7 +90,7 @@ export interface EncryptVaultOptions {
 
 export async function encryptVault(
   payload: unknown,
-  password: string,
+  secret: string,
   options: EncryptVaultOptions = {},
 ): Promise<EncryptedVault> {
   const randomBytes =
@@ -103,7 +103,7 @@ export async function encryptVault(
     hash: 'SHA-256',
     iterations: options.iterations ?? 600_000,
   };
-  const key = await deriveKey(password, salt, parameters);
+  const key = await deriveKey(secret, salt, parameters);
   const plaintext = encoder.encode(JSON.stringify(payload));
   const ciphertext = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv, additionalData: AAD },
@@ -125,7 +125,7 @@ export async function encryptVault(
 
 export async function decryptVault<T = unknown>(
   input: unknown,
-  password: string,
+  secret: string,
 ): Promise<T> {
   if (
     typeof input === 'object' &&
@@ -146,7 +146,7 @@ export async function decryptVault<T = unknown>(
   try {
     const vault = parsed.data;
     const key = await deriveKey(
-      password,
+      secret,
       fromBase64(vault.salt),
       vault.kdfParameters,
     );
@@ -164,7 +164,7 @@ export async function decryptVault<T = unknown>(
     if (error instanceof VaultCryptoError) throw error;
     throw new VaultCryptoError(
       'AUTHENTICATION_FAILED',
-      '主密码错误或保险库已损坏',
+      '保险库无法打开或已损坏',
       { cause: error },
     );
   }

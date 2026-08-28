@@ -137,4 +137,62 @@ describe('parseResumeCandidates', () => {
     expect(values('personal.birthDate', result)).toEqual([]);
     expect(values('jobPreference.position', result)).toEqual([]);
   });
+
+  it('keeps double-digit months intact in date ranges', () => {
+    const result = parseResumeCandidates(
+      sourceLinesFromText(
+        ['教育经历', '示例大学', '2025.11 — 至今'].join('\n'),
+      ),
+    );
+    expect(values('education.dateRange', result)).toEqual([
+      {
+        kind: 'dateRange',
+        value: {
+          start: { precision: 'month', year: 2025, month: 11 },
+          ongoing: true,
+        },
+      },
+    ]);
+  });
+
+  it('keeps October and December months intact', () => {
+    const result = parseResumeCandidates(
+      sourceLinesFromText(
+        ['实习经历', '示例公司', '2021.10 — 2022.12'].join('\n'),
+      ),
+    );
+    expect(values('employment.dateRange', result)).toEqual([
+      {
+        kind: 'dateRange',
+        value: {
+          start: { precision: 'month', year: 2021, month: 10 },
+          end: { precision: 'month', year: 2022, month: 12 },
+          ongoing: false,
+        },
+      },
+    ]);
+  });
+
+  it('does not leak research and award sections into employment', () => {
+    const result = parseResumeCandidates(
+      sourceLinesFromText(
+        [
+          '工作经历',
+          '示例公司',
+          '软件工程师 2021.01 — 2022.01',
+          '研究经历',
+          '某研究项目',
+          '获奖情况',
+          '优秀学生奖学金',
+        ].join('\n'),
+      ),
+    );
+    expect(values('employment.company', result)).toEqual([
+      { kind: 'text', value: '示例公司' },
+    ]);
+    expect(result.unmapped.map((line) => line.text)).toContain('某研究项目');
+    expect(result.unmapped.map((line) => line.text)).toContain(
+      '优秀学生奖学金',
+    );
+  });
 });

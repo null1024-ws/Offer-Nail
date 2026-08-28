@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react';
-import { fieldCatalog } from '../../domain/resume/field-catalog';
+import {
+  fieldCatalog,
+  type ResumeFieldId,
+} from '../../domain/resume/field-catalog';
 import {
   dateValueSchema,
   type DateValue,
@@ -64,6 +67,62 @@ export interface ImportReviewProps {
   onCancel: () => void;
 }
 
+interface CandidateGroup {
+  key: string;
+  title: string;
+  subtitle?: string;
+  indices: number[];
+}
+
+const SECTION_TITLES: Record<string, string> = {
+  personal: '基本信息',
+  education: '教育经历',
+  employment: '工作经历',
+  project: '项目经历',
+};
+
+function primaryFieldId(recordKey: string): ResumeFieldId | undefined {
+  if (recordKey.startsWith('education')) return 'education.school';
+  if (recordKey.startsWith('employment')) return 'employment.company';
+  if (recordKey.startsWith('project')) return 'project.name';
+  return undefined;
+}
+
+function groupCandidates(decisions: CandidateDecision[]): CandidateGroup[] {
+  const order: string[] = [];
+  const byKey = new Map<string, number[]>();
+  decisions.forEach((decision, index) => {
+    const key = decision.candidate.recordKey;
+    const indices = byKey.get(key);
+    if (indices) indices.push(index);
+    else {
+      byKey.set(key, [index]);
+      order.push(key);
+    }
+  });
+  return order.map((key) => {
+    const indices = byKey.get(key) ?? [];
+    const section = key.split(':')[0] ?? key;
+    const ordinal = key.includes(':')
+      ? ` ${Number(key.split(':')[1]) + 1}`
+      : '';
+    const primary = primaryFieldId(key);
+    const subtitle = primary
+      ? formatFieldValue(
+          indices
+            .map((index) => decisions[index]?.candidate)
+            .find((candidate) => candidate?.fieldId === primary)?.value,
+        )
+      : undefined;
+    return {
+      key,
+      title: (SECTION_TITLES[section] ?? section) + ordinal,
+      subtitle,
+      indices,
+    };
+  });
+}
+
 export function ImportReview({
   resume,
   candidates,
@@ -86,6 +145,7 @@ export function ImportReview({
   );
   const [decisions, setDecisions] = useState<CandidateDecision[]>(initial);
   const [error, setError] = useState<string>();
+  const groups = useMemo(() => groupCandidates(decisions), [decisions]);
 
   function update(index: number, patch: Partial<CandidateDecision>) {
     setDecisions((current) =>
@@ -95,54 +155,97 @@ export function ImportReview({
     );
   }
 
+  function toggleGroup(indices: number[], selected: boolean) {
+    setDecisions((current) =>
+      current.map((item, itemIndex) =>
+        indices.includes(itemIndex) ? { ...item, selected } : item,
+      ),
+    );
+  }
+
   return (
     <section className="import-review" aria-labelledby="import-title">
       <h2 id="import-title">校对导入结果</h2>
       <p>只有勾选的候选会写入主档案。已有值默认保留；如需覆盖，请额外确认。</p>
       <ul className="import-list">
-        {decisions.map((decision, index) => {
-          const existing = existingFieldValue(resume, decision.candidate);
-          const label = fieldCatalog[decision.candidate.fieldId].label;
+        {groups.map((group) => {
+          const allSelected = group.indices.every(
+            (index) => decisions[index]?.selected,
+          );
           return (
-            <li
-              key={`${decision.candidate.recordKey}:${decision.candidate.fieldId}:${index}`}
-            >
-              <label className="inline-check">
-                <input
-                  type="checkbox"
-                  checked={decision.selected}
-                  onChange={(event) =>
-                    update(index, { selected: event.target.checked })
-                  }
-                />
-                接受「{label}」
-              </label>
-              <p className="field-meta">
-                {decision.candidate.confidence === 'high' ? '高置信' : '中置信'}
-              </p>
-              <div className="import-candidate-grid">
-                <p>原文：{decision.candidate.source.text}</p>
-                <CandidateValueEditor
-                  label={label}
-                  value={decision.value}
-                  onChange={(value) => update(index, { value })}
-                />
+            <li key={group.key} className="import-group">
+              <header className="import-group-head">
+                <label className="inline-check">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={(event) =>
+                      toggleGroup(group.indices, event.target.checked)
+                    }
+                  />
+                  接受「{group.title}」全部
+                </label>
+                {group.subtitle && (
+                  <p className="field-meta">{group.subtitle}</p>
+                )}
+              </header>
+              <div className="import-group-fields">
+                {group.indices.map((index) => {
+                  const decision = decisions[index]!;
+                  const existing = existingFieldValue(
+                    resume,
+                    decision.candidate,
+                  );
+                  const label = fieldCatalog[decision.candidate.fieldId].label;
+                  return (
+                    <div
+                      className="import-field"
+                      key={`${decision.candidate.recordKey}:${decision.candidate.fieldId}:${index}`}
+                    >
+                      <label className="inline-check">
+                        <input
+                          type="checkbox"
+                          checked={decision.selected}
+                          onChange={(event) =>
+                            update(index, { selected: event.target.checked })
+                          }
+                        />
+                        接受「{label}」
+                      </label>
+                      <p className="field-meta">
+                        {decision.candidate.confidence === 'high'
+                          ? '高置信'
+                          : '中置信'}
+                      </p>
+                      <div className="import-candidate-grid">
+                        <p>原文：{decision.candidate.source.text}</p>
+                        <CandidateValueEditor
+                          label={label}
+                          value={decision.value}
+                          onChange={(value) => update(index, { value })}
+                        />
+                      </div>
+                      {existing && (
+                        <>
+                          <p>档案已有：{formatFieldValue(existing)}</p>
+                          <label className="inline-check">
+                            <input
+                              type="checkbox"
+                              checked={decision.overwrite}
+                              onChange={(event) =>
+                                update(index, {
+                                  overwrite: event.target.checked,
+                                })
+                              }
+                            />
+                            覆盖已有值
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              {existing && (
-                <>
-                  <p>档案已有：{formatFieldValue(existing)}</p>
-                  <label className="inline-check">
-                    <input
-                      type="checkbox"
-                      checked={decision.overwrite}
-                      onChange={(event) =>
-                        update(index, { overwrite: event.target.checked })
-                      }
-                    />
-                    覆盖已有值
-                  </label>
-                </>
-              )}
             </li>
           );
         })}

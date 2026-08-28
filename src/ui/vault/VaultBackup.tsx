@@ -8,12 +8,13 @@ import {
   type BackupRepository,
   type LockableSession,
 } from '../../vault/backup';
+import type { DeviceSecretStore } from '../../vault/device-secret';
 import type { ResumeData } from '../../domain/resume/schema';
 
 export interface VaultBackupProps {
   repository: BackupRepository;
   session: LockableSession;
-  password: string;
+  secrets: DeviceSecretStore;
   onRestored: (data: ResumeData) => Promise<void> | void;
   onReset: () => Promise<void> | void;
 }
@@ -21,7 +22,7 @@ export interface VaultBackupProps {
 export function VaultBackup({
   repository,
   session,
-  password,
+  secrets,
   onRestored,
   onReset,
 }: VaultBackupProps) {
@@ -35,14 +36,19 @@ export function VaultBackup({
   return (
     <section className="vault-backup" aria-labelledby="vault-backup-title">
       <h2 id="vault-backup-title">备份与恢复</h2>
-      <p>备份文件保持加密。没有正确主密码时无法恢复明文。</p>
+      <p>
+        备份文件保持加密，并包含打开档案所需的本机密钥。请自行保管，不要发给别人。
+      </p>
       <div className="item-actions">
         <button
           type="button"
           onClick={async () => {
             setError(undefined);
             try {
-              const serialized = await exportEncryptedBackup(repository);
+              const serialized = await exportEncryptedBackup(
+                repository,
+                secrets,
+              );
               const blob = new Blob([serialized], {
                 type: 'application/json',
               });
@@ -72,7 +78,7 @@ export function VaultBackup({
             setError(undefined);
             try {
               const serialized = await file.text();
-              const info = await previewEncryptedBackup(serialized, password);
+              const info = await previewEncryptedBackup(serialized);
               setPreview({ serialized, info });
             } catch (cause) {
               setPreview(undefined);
@@ -96,8 +102,8 @@ export function VaultBackup({
               try {
                 const restored = await restoreEncryptedBackup(
                   preview.serialized,
-                  password,
                   repository,
+                  secrets,
                 );
                 setPreview(undefined);
                 await onRestored(restored);
@@ -123,7 +129,7 @@ export function VaultBackup({
         disabled={!confirmReset}
         onClick={async () => {
           setError(undefined);
-          await resetLocalData(repository, session);
+          await resetLocalData(repository, session, secrets);
           await onReset();
         }}
       >
