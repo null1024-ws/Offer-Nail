@@ -7,7 +7,7 @@ import {
   type ResumeSection,
 } from './field-catalog';
 
-export const CURRENT_RESUME_SCHEMA_VERSION = 1 as const;
+export const CURRENT_RESUME_SCHEMA_VERSION = 2 as const;
 
 export const fillPolicySchema = z.enum([
   'automatic',

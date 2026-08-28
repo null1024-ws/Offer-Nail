@@ -36,6 +36,22 @@ const resumeDataV0Schema = z.strictObject({
   attachments: z.array(attachmentMetadataSchema).optional(),
 });
 
+const resumeDataV1Schema = z.looseObject({
+  schemaVersion: z.literal(1),
+  masterProfile: z.looseObject({
+    personal: z.looseObject({
+      fields: z.array(z.looseObject({ fieldId: z.string() })),
+    }),
+  }),
+  profileVariants: z
+    .array(
+      z.looseObject({
+        fieldOverrides: z.array(z.looseObject({ fieldId: z.string() })),
+      }),
+    )
+    .optional(),
+});
+
 type Migration = (input: unknown) => unknown;
 
 const migrations: ReadonlyMap<number, Migration> = new Map([
@@ -48,6 +64,31 @@ const migrations: ReadonlyMap<number, Migration> = new Map([
         masterProfile: legacy.profile,
         profileVariants: legacy.variants ?? [],
         attachments: legacy.attachments ?? [],
+      };
+    },
+  ],
+  [
+    1,
+    (input) => {
+      const legacy = resumeDataV1Schema.parse(input);
+      return {
+        ...legacy,
+        schemaVersion: 2,
+        masterProfile: {
+          ...legacy.masterProfile,
+          personal: {
+            ...legacy.masterProfile.personal,
+            fields: legacy.masterProfile.personal.fields.filter(
+              (entry) => entry.fieldId !== 'personal.photo',
+            ),
+          },
+        },
+        profileVariants: (legacy.profileVariants ?? []).map((variant) => ({
+          ...variant,
+          fieldOverrides: variant.fieldOverrides.filter(
+            (override) => override.fieldId !== 'personal.photo',
+          ),
+        })),
       };
     },
   ],

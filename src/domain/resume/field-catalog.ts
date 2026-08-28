@@ -57,7 +57,6 @@ const field = (
 });
 
 export const fieldCatalog = {
-  'personal.photo': field('简历照片', 'personal', 'attachment', 'sensitive'),
   'personal.fullName': field('姓名', 'personal'),
   'personal.namePinyin': field('姓名拼音', 'personal'),
   'personal.englishName': field('英文名', 'personal'),

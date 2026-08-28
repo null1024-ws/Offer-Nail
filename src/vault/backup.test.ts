@@ -56,7 +56,7 @@ describe('encrypted backup', () => {
     await expect(previewEncryptedBackup(serialized)).resolves.toEqual({
       exportedAt: '2026-08-28T07:00:00.000Z',
       profileName: '旧版默认档案',
-      schemaVersion: 1,
+      schemaVersion: 2,
     });
     const tampered = JSON.parse(serialized) as { deviceSecret: string };
     tampered.deviceSecret = 'x'.repeat(32);
@@ -88,7 +88,7 @@ describe('encrypted backup', () => {
       target,
       targetSecrets,
     );
-    expect(restored.schemaVersion).toBe(1);
+    expect(restored.schemaVersion).toBe(2);
     await expect(
       decryptVault(target.vault!, await targetSecrets.getOrCreate()),
     ).resolves.toEqual(restored);
