@@ -2,10 +2,6 @@
 
 面向秋招求职者的 Chrome / Edge 本地填写插件：把简历整理成加密档案，在招聘表单上预览后批量填写。
 
-站点：https://null1024-ws.github.io/Offer-Nail （英文：https://null1024-ws.github.io/Offer-Nail/en/）
-
-首次发布：仓库 Settings → Pages → Source 选 GitHub Actions，然后等待 `Deploy GitHub Pages` 工作流完成。
-
 **插件只填写，永不自动提交申请。** 扫描版 PDF（无文字层）暂不支持 OCR，请改为手动录入。
 
 ## 隐私
