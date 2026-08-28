@@ -142,6 +142,31 @@ describe('scorePageFields', () => {
       expect.arrayContaining([expect.stringContaining('autocomplete')]),
     );
   });
+
+  it('maps Didi-style titles recovered from sibling elements', () => {
+    const gender = scoreCollectedField(collected({ label: '性别' }));
+    expect(gender.candidates[0]?.fieldId).toBe('personal.gender');
+
+    const duty = scoreCollectedField(
+      collected({
+        label: '工作职责',
+        kind: 'textarea',
+        tagName: 'textarea',
+        type: 'textarea',
+      }),
+    );
+    expect(duty.autoSelected?.fieldId).toBe('employment.description');
+
+    const summary = scoreCollectedField(
+      collected({
+        label: '自我描述',
+        kind: 'textarea',
+        tagName: 'textarea',
+        type: 'textarea',
+      }),
+    );
+    expect(summary.autoSelected?.fieldId).toBe('personal.summary');
+  });
 });
 
 function labelsMatch(source: string, expected: string): boolean {

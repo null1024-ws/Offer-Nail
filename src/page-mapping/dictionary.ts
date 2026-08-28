@@ -47,11 +47,11 @@ const EXTRA_SYNONYMS: Partial<
     hint: 'date',
   },
   'personal.currentCity': {
-    synonyms: ['城市', '现居城市', '目前城市'],
+    synonyms: ['城市', '现居城市', '目前城市', '所在地', '现居住地'],
     attrs: ['city', 'currentcity', 'location'],
   },
   'personal.summary': {
-    synonyms: ['个人简介', '自我评价', '简介'],
+    synonyms: ['个人简介', '自我评价', '简介', '自我描述', '个人描述', '自我介绍'],
     attrs: ['summary', 'about', 'bio'],
   },
   'personal.github': {
@@ -68,6 +68,14 @@ const EXTRA_SYNONYMS: Partial<
     synonyms: ['申请职位', '应聘职位', '意向职位'],
     attrs: ['applyposition', 'jobtitle'],
   },
+  'jobPreference.cities': {
+    synonyms: ['期望城市', '意向城市', '工作城市'],
+    attrs: ['expectcity', 'city', 'workcity'],
+  },
+  'jobPreference.salary': {
+    synonyms: ['期望薪资', '期望月薪', '期望年薪', '薪资要求'],
+    attrs: ['expectsalary', 'salary'],
+  },
   'education.school': {
     synonyms: ['学校', '院校', '毕业院校', '学校名称'],
     attrs: ['school', 'university', 'college'],
@@ -77,16 +85,28 @@ const EXTRA_SYNONYMS: Partial<
     attrs: ['educationlevel', 'degreelevel'],
   },
   'education.major': {
-    synonyms: ['专业', '所学专业'],
+    synonyms: ['专业', '所学专业', '专业名称'],
     attrs: ['major'],
   },
   'employment.company': {
-    synonyms: ['公司', '单位', '任职公司', '公司名称'],
+    synonyms: ['公司', '单位', '任职公司', '公司名称', '最近公司', '当前公司'],
     attrs: ['company', 'employer', 'organization'],
   },
   'employment.position': {
-    synonyms: ['职位名称', '职务', '岗位名称'],
+    synonyms: ['职位名称', '职务', '岗位名称', '职位', '岗位'],
     attrs: ['position'],
+  },
+  'employment.description': {
+    synonyms: ['工作职责', '工作内容', '工作描述', '工作经历描述'],
+    attrs: ['description', 'responsibility', 'duty'],
+  },
+  'project.summary': {
+    synonyms: ['项目描述', '项目简介', '项目背景'],
+    attrs: ['projectdescription', 'projectsummary'],
+  },
+  'project.responsibilities': {
+    synonyms: ['项目中职责', '项目职责', '个人职责', '项目角色职责'],
+    attrs: ['projectresponsibility'],
   },
 };
 

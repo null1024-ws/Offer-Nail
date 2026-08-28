@@ -86,4 +86,23 @@ describe('collectPageFields', () => {
       collection.inaccessible.some((region) => region.reason === 'closedShadow'),
     ).toBe(false);
   });
+
+  it('reads a field title from a sibling title element', () => {
+    const document = new JSDOM(
+      `<form><div class="apply-field">
+        <div class="title"><span>性别</span></div>
+        <div class="ctrl"><label class="select"><span></span><input placeholder="请选择" /></label></div>
+      </div></form>`,
+    ).window.document;
+    const collection = collectPageFields(document);
+    expect(collection.fields[0]?.label).toBe('性别');
+  });
+
+  it('does not use a generic placeholder as a label', () => {
+    const document = new JSDOM(
+      `<form><input placeholder="请选择" /><textarea placeholder="内容"></textarea></form>`,
+    ).window.document;
+    const collection = collectPageFields(document);
+    expect(collection.fields.every((field) => field.label === '')).toBe(true);
+  });
 });

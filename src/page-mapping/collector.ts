@@ -234,19 +234,107 @@ function fieldLabel(element: Element): string {
   }
   const aria = element.getAttribute('aria-label');
   if (aria) return normalize(aria);
+
   const associated = labelsOf(element);
   if (associated.length) {
-    return visibleFieldLabel(
+    const text = visibleFieldLabel(
       element,
       associated.map((label) => labelText(label, element)).join(' '),
     );
+    if (!isGenericLabel(text)) return text;
   }
+
   const wrapping = element.closest('label');
-  if (wrapping) return visibleFieldLabel(element, labelText(wrapping, element));
+  if (wrapping) {
+    const text = visibleFieldLabel(element, labelText(wrapping, element));
+    if (!isGenericLabel(text)) return text;
+  }
+
   const legend = fieldsetLegend(element);
-  if (legend) return legend;
+  if (legend && !isGenericLabel(legend)) return legend;
+
+  const title = ancestorFieldTitle(element);
+  if (!isGenericLabel(title)) return title;
+
   const placeholder = asControl(element).placeholder;
-  if (placeholder) return normalize(placeholder);
+  const normalized = placeholder ? normalize(placeholder) : '';
+  return isGenericLabel(normalized) ? '' : normalized;
+}
+
+const GENERIC_LABELS = new Set([
+  '请选择',
+  '请选择日期',
+  '请选择时间',
+  '请选择性别',
+  '请选择学历',
+  '请选择城市',
+  '请选择区域',
+  '请选择省市',
+  '请选择省',
+  '请选择市',
+  '请选择国家',
+  '请选择选项',
+  '请选择此项',
+  '请选择地点',
+  '请填写',
+  '请输入',
+  '请补充',
+  '请完善',
+  '请填写内容',
+  '请输入内容',
+  '内容',
+]);
+
+function isGenericLabel(text: string): boolean {
+  const trimmed = text.trim();
+  return trimmed.length === 0 || GENERIC_LABELS.has(trimmed);
+}
+
+const TITLE_TAGS = new Set([
+  'DIV',
+  'LABEL',
+  'P',
+  'H1',
+  'H2',
+  'H3',
+  'H4',
+  'H5',
+  'H6',
+  'LEGEND',
+  'TD',
+  'TH',
+]);
+
+function ancestorFieldTitle(element: Element): string {
+  const labelWrapper = element.closest('label');
+  let branch: Element = labelWrapper ?? element;
+  let container: Element | null = branch.parentElement;
+  let depth = 0;
+  while (container && depth < 8) {
+    const tag = container.tagName;
+    if (tag === 'FORM' || tag === 'BODY' || tag === 'HTML') break;
+    const title = titleFromSiblings(container, branch);
+    if (title) return title;
+    branch = container;
+    container = container.parentElement;
+    depth += 1;
+  }
+  return '';
+}
+
+function titleFromSiblings(container: Element, branch: Element): string {
+  const children = Array.from(container.children);
+  const branchIndex = children.indexOf(branch);
+  const candidates =
+    branchIndex >= 0 ? children.slice(0, branchIndex) : children;
+  for (let i = candidates.length - 1; i >= 0; i -= 1) {
+    const child = candidates[i];
+    if (!child) continue;
+    if (!TITLE_TAGS.has(child.tagName)) continue;
+    if (child.querySelector('input, textarea, select')) continue;
+    const text = normalize(child.textContent ?? '');
+    if (text.length >= 1 && text.length <= 40) return text;
+  }
   return '';
 }
 
