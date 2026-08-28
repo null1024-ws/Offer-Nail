@@ -1,0 +1,45 @@
+export const resumeV0Fixture = {
+  schemaVersion: 0,
+  profile: {
+    id: '20000000-0000-4000-8000-000000000001',
+    name: '旧版默认档案',
+    createdAt: '2026-08-01T00:00:00.000Z',
+    updatedAt: '2026-08-02T00:00:00.000Z',
+    personal: {
+      id: '20000000-0000-4000-8000-000000000002',
+      section: 'personal',
+      fields: [
+        {
+          fieldId: 'personal.fullName',
+          value: { kind: 'text', value: '张三' },
+          fillPolicy: 'automatic',
+        },
+      ],
+    },
+    jobPreference: {
+      id: '20000000-0000-4000-8000-000000000003',
+      section: 'jobPreference',
+      fields: [],
+    },
+    compliance: {
+      id: '20000000-0000-4000-8000-000000000004',
+      section: 'compliance',
+      fields: [],
+    },
+    educations: [],
+    employments: [],
+    projects: [],
+    researches: [],
+    languages: [],
+    skills: [],
+    certificates: [],
+    awards: [],
+    campusExperiences: [],
+    volunteerExperiences: [],
+    trainings: [],
+    portfolios: [],
+    intellectualProperties: [],
+    referees: [],
+    enabledSensitiveSections: [],
+  },
+} as const;

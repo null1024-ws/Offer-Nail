@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offer-Nail 本地测试表单</title>
+    <style>
+      :root {
+        color: #172033;
+        background: #f7f3e8;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 48px 24px 80px;
+      }
+      h1 {
+        margin: 0 0 12px;
+      }
+      .lead {
+        color: #4c5568;
+        line-height: 1.7;
+      }
+      form,
+      section {
+        display: grid;
+        gap: 16px;
+        margin-top: 32px;
+        border: 1px solid #d9d1bd;
+        border-radius: 12px;
+        padding: 24px;
+        background: #fffdf7;
+      }
+      h2 {
+        margin: 0;
+      }
+      label {
+        display: grid;
+        gap: 8px;
+        font-weight: 700;
+      }
+      input,
+      select,
+      textarea,
+      button {
+        font: inherit;
+      }
+      input:not([type='radio']):not([type='checkbox']),
+      select,
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        border: 1px solid #9aa1ad;
+        border-radius: 8px;
+        padding: 11px 12px;
+      }
+      .choice-row {
+        display: flex;
+        gap: 16px;
+        font-weight: 500;
+      }
+      .choice-row label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-weight: 500;
+      }
+      .employment-item {
+        display: grid;
+        gap: 12px;
+        border-top: 1px solid #e3dccb;
+        padding-top: 16px;
+      }
+      .fake-select {
+        border: 1px solid #9aa1ad;
+        border-radius: 8px;
+        padding: 11px 12px;
+        color: #626b7c;
+        background: white;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        border: 1px solid #9aa1ad;
+        padding: 8px 12px;
+        color: #315b7d;
+        background: white;
+        border-radius: 8px;
+      }
+      button[type='submit'] {
+        background: #315b7d;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Offer-Nail fixtures</p>
+      <h1>本地招聘申请表</h1>
+      <p class="lead">
+        静态夹具，覆盖原生控件、受控输入、重复经历、开放 Shadow
+        DOM，以及隐藏、禁用和不支持的控件。请勿在未确认时自动提交。
+      </p>
+      <form id="application-form" action="#submitted" method="get">
+        <section aria-labelledby="personal-title">
+          <h2 id="personal-title">基本信息</h2>
+          <label>
+            姓名
+            <input
+              id="full-name"
+              name="fullName"
+              data-testid="field-full-name"
+              data-control="text"
+              autocomplete="name"
+            />
+          </label>
+          <label>
+            手机号码
+            <input
+              id="phone"
+              name="phone"
+              data-testid="field-phone"
+              data-control="text"
+              inputmode="tel"
+              autocomplete="tel"
+            />
+          </label>
+          <label>
+            邮箱地址
+            <input
+              id="email"
+              name="email"
+              type="email"
+              data-testid="field-email"
+              data-control="text"
+              value="already@example.com"
+              autocomplete="email"
+            />
+          </label>
+          <label>
+            个人简介
+            <textarea
+              id="summary"
+              name="summary"
+              rows="4"
+              data-testid="field-summary"
+              data-control="textarea"
+            ></textarea>
+          </label>
+          <fieldset>
+            <legend>性别</legend>
+            <div class="choice-row">
+              <label>
+                <input
+                  type="radio"
+                  name="gender"
+                  value="男"
+                  data-testid="field-gender-male"
+                  data-control="radio"
+                />
+                男
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="gender"
+                  value="女"
+                  data-testid="field-gender-female"
+                  data-control="radio"
+                />
+                女
+              </label>
+            </div>
+          </fieldset>
+          <label class="choice-row">
+            <input
+              id="accept-remote"
+              name="acceptRemote"
+              type="checkbox"
+              data-testid="field-accept-remote"
+              data-control="checkbox"
+            />
+            接受远程
+          </label>
+          <label>
+            出生日期
+            <input
+              id="birth-date"
+              name="birthDate"
+              type="date"
+              data-testid="field-birth-date"
+              data-control="date"
+            />
+          </label>
+          <label>
+            所在城市
+            <input
+              id="current-city"
+              name="currentCity"
+              data-testid="field-current-city"
+              data-control="controlled"
+            />
+          </label>
+          <label>
+            隐藏姓名
+            <input
+              id="hidden-name"
+              name="hiddenName"
+              data-testid="field-hidden-name"
+              data-control="hidden"
+              style="display: none"
+              value="不应采集"
+            />
+          </label>
+          <input
+            type="hidden"
+            name="csrf"
+            data-testid="field-csrf"
+            data-control="hidden"
+            value="csrf-token"
+          />
+          <label>
+            身份证件
+            <input
+              id="identity-document"
+              name="identityDocument"
+              data-testid="field-disabled-id"
+              data-control="disabled"
+              value="已禁用"
+              disabled
+            />
+          </label>
+        </section>
+
+        <section aria-labelledby="education-title">
+          <h2 id="education-title">教育经历</h2>
+          <label>
+            学校名称
+            <input
+              id="school"
+              name="school"
+              data-testid="field-school"
+              data-control="text"
+            />
+          </label>
+          <label>
+            学历
+            <select
+              id="education-level"
+              name="educationLevel"
+              data-testid="field-education-level"
+              data-control="select"
+            >
+              <option value="">请选择</option>
+              <option value="专科">专科</option>
+              <option value="本科">本科</option>
+              <option value="硕士">硕士</option>
+              <option value="博士">博士</option>
+            </select>
+          </label>
+        </section>
+
+        <section aria-labelledby="employment-title">
+          <h2 id="employment-title">工作经历</h2>
+          <div id="employment-list" class="employment-list">
+            <article class="employment-item" data-employment-index="0">
+              <label>
+                公司名称
+                <input
+                  name="company[]"
+                  data-testid="employment-0-company"
+                  data-control="repeat"
+                  value="示例科技有限公司"
+                />
+              </label>
+              <label>
+                职位名称
+                <input
+                  name="position[]"
+                  data-testid="employment-0-position"
+                  data-control="repeat"
+                  value="前端实习生"
+                />
+              </label>
+            </article>
+          </div>
+          <div class="actions">
+            <button
+              id="employment-add"
+              type="button"
+              data-testid="employment-add"
+              data-control="action"
+            >
+              添加工作经历
+            </button>
+          </div>
+        </section>
+
+        <section aria-labelledby="shadow-title">
+          <h2 id="shadow-title">Shadow DOM 与不支持控件</h2>
+          <div id="open-shadow-host"></div>
+          <p>职级（自定义控件，不支持填写）</p>
+          <div
+            class="fake-select"
+            data-testid="field-unsupported-combobox"
+            data-control="unsupported"
+            role="listbox"
+            aria-label="职级"
+          >
+            请选择职级
+          </div>
+          <label>
+            内部工号
+            <div
+              id="closed-shadow-host"
+              data-testid="field-closed-shadow-host"
+              data-control="unsupported"
+            ></div>
+          </label>
+        </section>
+
+        <div class="actions">
+          <button
+            type="submit"
+            data-testid="submit-application"
+            data-control="action"
+          >
+            提交申请
+          </button>
+        </div>
+      </form>
+    </main>
+    <template id="employment-template">
+      <article class="employment-item">
+        <label>
+          公司名称
+          <input name="company[]" data-control="repeat" />
+        </label>
+        <label>
+          职位名称
+          <input name="position[]" data-control="repeat" />
+        </label>
+      </article>
+    </template>
+    <script>
+      (function setupFixture() {
+        const city = document.getElementById('current-city');
+        const nativeValue = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          'value',
+        );
+        let cityState = city.value;
+        Object.defineProperty(city, 'value', {
+          configurable: true,
+          get() {
+            return cityState;
+          },
+          set(next) {
+            cityState = String(next);
+            nativeValue.set.call(city, cityState);
+          },
+        });
+        city.addEventListener('input', function () {
+          cityState = nativeValue.get.call(city);
+        });
+
+        const openHost = document.getElementById('open-shadow-host');
+        const openShadow = openHost.attachShadow({ mode: 'open' });
+        openShadow.innerHTML =
+          '<label>GitHub<input id="github" name="github" data-testid="field-github" data-control="shadow" autocomplete="url"></label>';
+
+        const closedHost = document.getElementById('closed-shadow-host');
+        closedHost.attachShadow({ mode: 'closed' }).innerHTML =
+          '<input name="internalId" data-testid="field-closed-secret" value="secret-id">';
+
+        const list = document.getElementById('employment-list');
+        const template = document.getElementById('employment-template');
+        document
+          .getElementById('employment-add')
+          .addEventListener('click', function () {
+            const index = list.children.length;
+            const node = template.content.cloneNode(true);
+            const item = node.querySelector('.employment-item');
+            item.dataset.employmentIndex = String(index);
+            const inputs = node.querySelectorAll('input');
+            inputs[0].dataset.testid = 'employment-' + index + '-company';
+            inputs[1].dataset.testid = 'employment-' + index + '-position';
+            list.appendChild(node);
+          });
+      })();
+    </script>
+  </body>
+</html>

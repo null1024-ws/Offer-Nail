@@ -1,0 +1,307 @@
+:root {
+  color: #172033;
+  background: #f7f3e8;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #315b7d;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(32px, 6vw, 56px);
+}
+
+p {
+  max-width: 640px;
+  line-height: 1.7;
+}
+
+.lead {
+  color: #4c5568;
+  font-size: 18px;
+}
+
+section {
+  margin-top: 40px;
+  border: 1px solid #d9d1bd;
+  border-radius: 12px;
+  padding: 24px;
+  background: #fffdf7;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+form {
+  display: grid;
+  gap: 20px;
+  max-width: 560px;
+  margin-top: 40px;
+  border: 1px solid #d9d1bd;
+  border-radius: 14px;
+  padding: 28px;
+  background: #fffdf7;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+
+input,
+select {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #9aa1ad;
+  border-radius: 8px;
+  padding: 11px 12px;
+  color: inherit;
+  background: white;
+  font: inherit;
+}
+
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #9aa1ad;
+  border-radius: 8px;
+  padding: 11px 12px;
+  font: inherit;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgb(49 91 125 / 25%);
+  outline-offset: 1px;
+  border-color: #315b7d;
+}
+
+.hint {
+  margin: -12px 0 0;
+  color: #626b7c;
+  font-size: 14px;
+}
+
+.acknowledgement {
+  grid-template-columns: 20px 1fr;
+  align-items: start;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.acknowledgement input {
+  margin-top: 4px;
+}
+
+.error {
+  margin: 0;
+  color: #a12828;
+  font-weight: 700;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: white;
+  background: #315b7d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.profile-form {
+  max-width: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.profile-form section {
+  margin: 0;
+}
+
+.profile-form section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-form section > header h2 {
+  margin: 0;
+}
+
+.profile-form article {
+  margin-top: 20px;
+  border-top: 1px solid #e3dccb;
+  padding-top: 20px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.date-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.field-meta {
+  color: #626b7c;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sensitive-section {
+  border-color: #c98a62;
+  background: #fff8ef;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.inline-check {
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+}
+
+.inline-check input {
+  width: auto;
+}
+
+small {
+  color: #8a4d25;
+  font-weight: 600;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.item-actions button,
+.profile-form section > header button {
+  border: 1px solid #9aa1ad;
+  padding: 8px 12px;
+  color: #315b7d;
+  background: white;
+}
+
+.options-shell {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.variant-manager,
+.site-rules {
+  margin: 40px 24px 0;
+}
+
+.variant-create,
+.variant-rename {
+  display: grid;
+  gap: 12px;
+}
+
+.variant-fields {
+  display: grid;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.variant-field {
+  display: grid;
+  gap: 8px;
+}
+
+.inherited-value {
+  color: #626b7c;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.variant-order {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.variant-attachments {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  border: 1px dashed #d9d1bd;
+  padding: 16px;
+}
+
+.resume-import,
+.import-review,
+.fill-preview,
+.vault-backup {
+  margin: 40px 24px 0;
+}
+
+.import-list {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.import-list li {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #e3dccb;
+  padding-top: 16px;
+}
+
+.import-candidate-grid {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .import-candidate-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
