@@ -82,4 +82,33 @@ describe('background fill handler', () => {
     await repository.destroy();
     expect(created.masterProfile.name).toBe('默认档案');
   });
+
+  it('clears the vault and device secret on offerNail:reset', async () => {
+    const repository = new VaultRepository({
+      databaseName: `offer-nail-reset-${crypto.randomUUID()}`,
+    });
+    const secrets = new MemoryDeviceSecretStore();
+    await initializeNewVault(repository, secrets);
+    await saveProfile(repository, seededResume(), secrets);
+    const session = new VaultSession<ResumeData>(new MemoryMarkerStore());
+    await session.initialize();
+    const handle = createBackgroundHandler({
+      session,
+      repository,
+      secrets,
+      getActiveTabId: async () => 1,
+      ensureScript: async () => undefined,
+      sendToTab: async () => ({ ok: false, error: 'unused' }),
+    });
+
+    expect(await repository.readVault()).toBeDefined();
+    expect(await secrets.read()).toBeDefined();
+
+    const reset = await handle({ type: 'offerNail:reset' });
+    expect(reset.ok).toBe(true);
+    expect(await repository.readVault()).toBeUndefined();
+    expect(await secrets.read()).toBeUndefined();
+
+    await repository.destroy();
+  });
 });

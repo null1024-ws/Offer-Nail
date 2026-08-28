@@ -13,6 +13,7 @@ import type { PageCollection } from '../page-mapping/collector';
 import type { DeviceSecretStore } from '../vault/device-secret';
 import type { VaultRepository } from '../vault/repository';
 import { VaultLockedError, type VaultSession } from '../vault/session';
+import { resetLocalData } from '../vault/backup';
 import type { ExtensionRequest, ExtensionResponse } from './protocol';
 
 export interface BackgroundFillDeps {
@@ -82,6 +83,12 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
 
       if (request.type === 'offerNail:lock') {
         await deps.session.lock();
+        lastPlan = undefined;
+        return { ok: true };
+      }
+
+      if (request.type === 'offerNail:reset') {
+        await resetLocalData(deps.repository, deps.session, deps.secrets);
         lastPlan = undefined;
         return { ok: true };
       }

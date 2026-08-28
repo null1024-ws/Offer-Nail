@@ -4,16 +4,91 @@
   font-size: 16px;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 main {
   max-width: 880px;
   margin: 0 auto;
   padding: 40px 24px 80px;
 }
 
-.options-shell {
-  max-width: 880px;
+.options-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 880px);
+  gap: 32px;
+  align-items: start;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 32px 24px 80px;
+}
+
+.options-nav {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 4px 0;
+}
+
+.options-nav-group + .options-nav-group {
+  margin-top: 16px;
+}
+
+.options-nav-title {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.options-nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: 2px solid var(--border);
+}
+
+.options-nav a {
+  display: block;
+  padding: 5px 12px;
+  margin-left: -2px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.4;
+  border-left: 2px solid transparent;
+}
+
+.options-nav a:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.options-nav a.active {
+  color: var(--accent-hover);
+  border-left-color: var(--accent);
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.options-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.options-shell main {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-anchor,
+section[id] {
+  scroll-margin-top: 16px;
 }
 
 .page-head {
@@ -225,9 +300,19 @@ small {
   }
 }
 
+@media (max-width: 900px) {
+  .options-layout {
+    grid-template-columns: 1fr;
+    padding: 24px 16px 64px;
+  }
+
+  .options-nav {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
-  main,
-  .options-shell {
+  main {
     width: 100%;
     padding: 24px 16px 64px;
   }

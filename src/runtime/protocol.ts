@@ -8,6 +8,7 @@ export type ExtensionRequest =
   | { type: 'offerNail:ping' }
   | { type: 'offerNail:status' }
   | { type: 'offerNail:lock' }
+  | { type: 'offerNail:reset' }
   | { type: 'offerNail:replacePayload'; data: ResumeData }
   | { type: 'offerNail:scan'; variantId?: string }
   | { type: 'offerNail:confirmFill'; items: FillPreviewItem[] }

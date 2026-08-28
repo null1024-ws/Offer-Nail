@@ -109,7 +109,7 @@ export function ProfileEditor({ initialValue, onSave }: ProfileEditorProps) {
                 record={initialValue[property]}
               />
             ))}
-          <section className="sensitive-section">
+          <section className="sensitive-section" id="profile-compliance">
             <header>
               <div>
                 <h2>招聘合规与声明</h2>
@@ -143,7 +143,7 @@ export function ProfileEditor({ initialValue, onSave }: ProfileEditorProps) {
             .map((definition) => (
               <RepeatSection key={definition.property} {...definition} />
             ))}
-          <section className="sensitive-section">
+          <section className="sensitive-section" id="profile-referee">
             <header>
               <div>
                 <h2>推荐人/证明人</h2>
@@ -197,7 +197,7 @@ function SingletonSection({
 }) {
   const { register } = useFormContext<ProfileDraft>();
   return (
-    <section>
+    <section id={`profile-${section}`}>
       <h2>{label}</h2>
       <input
         type="hidden"
@@ -229,7 +229,7 @@ function RepeatSection({
   const { control, register } = useFormContext<ProfileDraft>();
   const records = useFieldArray({ control, name: property });
   return (
-    <section>
+    <section id={`profile-${section}`}>
       <header>
         <h2>{label}</h2>
         <button

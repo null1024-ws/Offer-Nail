@@ -38,6 +38,29 @@ const REPEAT_PROPERTIES = {
 
 type RepeatSection = keyof typeof REPEAT_PROPERTIES;
 
+const REPEAT_PRIMARY_FIELD: Record<RepeatSection, ResumeFieldId> = {
+  education: 'education.school',
+  employment: 'employment.company',
+  project: 'project.name',
+  research: 'research.title',
+  language: 'language.name',
+  skill: 'skill.name',
+  certificate: 'certificate.name',
+  award: 'award.name',
+  campus: 'campus.organization',
+  volunteer: 'volunteer.organization',
+  training: 'training.name',
+  portfolio: 'portfolio.name',
+  intellectualProperty: 'intellectualProperty.name',
+  referee: 'referee.name',
+};
+
+function fieldValueKey(value: FieldValue | undefined): string | undefined {
+  if (!value) return undefined;
+  if (value.kind === 'attachment') return `attachment:${value.attachmentId}`;
+  return `${value.kind}:${JSON.stringify(value.value)}`;
+}
+
 function isRepeatSection(section: ResumeSection): section is RepeatSection {
   return section in REPEAT_PROPERTIES;
 }
@@ -137,15 +160,38 @@ export function applyConfirmedCandidates(
       return;
     }
     if (!isRepeatSection(section)) return;
-    const record: ResumeRecord = {
-      id: crypto.randomUUID(),
-      section,
-      fields: [],
-    };
-    group.forEach((decision) => {
-      upsertField(record, decision.candidate.fieldId, decision.value);
-    });
-    data.masterProfile[REPEAT_PROPERTIES[section]].push(record);
+    const records = data.masterProfile[REPEAT_PROPERTIES[section]];
+    const primaryFieldId = REPEAT_PRIMARY_FIELD[section];
+    const primaryDecision = group.find(
+      (decision) => decision.candidate.fieldId === primaryFieldId,
+    );
+    const primaryKey = primaryDecision
+      ? fieldValueKey(primaryDecision.value)
+      : undefined;
+    const target =
+      primaryKey === undefined
+        ? undefined
+        : records.find((record) => {
+            const existing = record.fields.find(
+              (entry) => entry.fieldId === primaryFieldId,
+            );
+            return fieldValueKey(existing?.value) === primaryKey;
+          });
+    if (target) {
+      group.forEach((decision) => {
+        upsertField(target, decision.candidate.fieldId, decision.value);
+      });
+    } else {
+      const record: ResumeRecord = {
+        id: crypto.randomUUID(),
+        section,
+        fields: [],
+      };
+      group.forEach((decision) => {
+        upsertField(record, decision.candidate.fieldId, decision.value);
+      });
+      records.push(record);
+    }
   });
 
   data.masterProfile.updatedAt = new Date().toISOString();

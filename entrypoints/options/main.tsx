@@ -31,11 +31,40 @@ import {
   type StoredSiteRule,
 } from '../../src/vault/repository';
 import { BrowserDeviceSecretStore } from '../../src/vault/device-secret';
+import { OptionsNav } from '../../src/ui/options/OptionsNav';
+import {
+  repeatSectionDefinitions,
+  singletonSectionDefinitions,
+} from '../../src/domain/resume/editor-model';
 import './style.css';
 
 const repository = new VaultRepository();
 const secrets = new BrowserDeviceSecretStore();
 const llmStore = new BrowserLlmConfigStore(secrets);
+
+const OPTIONS_NAV_GROUPS = [
+  {
+    label: '功能',
+    items: [
+      { id: 'import-resume', label: '导入简历' },
+      { id: 'llm-settings', label: 'AI 辅助识别' },
+      { id: 'backup-restore', label: '备份与恢复' },
+      { id: 'site-rules', label: '网站规则' },
+      { id: 'variant-manager', label: '岗位变体' },
+    ],
+  },
+  {
+    label: '主档案',
+    items: [
+      ...singletonSectionDefinitions
+        .filter(({ property }) => property !== 'compliance')
+        .map(({ section, label }) => ({ id: `profile-${section}`, label })),
+      ...repeatSectionDefinitions
+        .filter(({ property }) => property !== 'referees')
+        .map(({ section, label }) => ({ id: `profile-${section}`, label })),
+    ],
+  },
+];
 
 function Options() {
   const [state, setState] = useState<
@@ -148,76 +177,89 @@ function Options() {
       });
     };
     return (
-      <div className="options-shell">
-        <header className="page-head">
-          <p className="eyebrow">Offer-Nail</p>
-          <p className="lead">简历只留本机。只填写，不代交。</p>
-        </header>
-        <ResumeImport
-          resume={resumeData}
-          onApply={persist}
-          llm={
-            llmConfig?.enabled && llmApiKey
-              ? { apiKey: llmApiKey, model: llmConfig.model }
-              : undefined
-          }
-        />
-        <LlmSettings
-          store={llmStore}
-          config={llmConfig}
-          hasApiKey={Boolean(llmApiKey)}
-          onSaved={async (next, hasKey) => {
-            setLlmConfig(next);
-            setLlmApiKey(hasKey ? await llmStore.readApiKey() : undefined);
-          }}
-        />
-        <VaultBackup
-          repository={repository}
-          session={{
-            lock: async () => {
-              await browser.runtime.sendMessage({ type: 'offerNail:lock' });
-            },
-          }}
-          secrets={secrets}
-          onRestored={async (restored) => {
-            setResumeData(restored);
-            void browser.runtime.sendMessage({
-              type: 'offerNail:replacePayload',
-              data: restored,
-            });
-          }}
-          onReset={() => {
-            setResumeData(undefined);
-            setSiteRules([]);
-            setState('uninitialized');
-          }}
-        />
-        <SiteRulesPanel
-          rules={siteRules}
-          onChange={async (next) => {
-            const current = await repository.listSiteRules();
-            await Promise.all(
-              current
-                .filter((rule) => !next.some((item) => item.id === rule.id))
-                .map((rule) => repository.deleteSiteRule(rule.id)),
-            );
-            await Promise.all(
-              next.map((rule) =>
-                repository.writeSiteRule({
-                  ...rule,
-                  origin: rule.origin,
-                }),
-              ),
-            );
-            setSiteRules(await repository.listSiteRules());
-          }}
-        />
-        <VariantManager value={resumeData} onChange={persist} />
-        <ProfileEditor
-          key={resumeData.masterProfile.updatedAt}
-          initialValue={resumeDataToProfileDraft(resumeData)}
-          onSave={(draft) => persist(applyProfileDraft(resumeData, draft))}
-        />
+      <div className="options-layout">
+        <OptionsNav groups={OPTIONS_NAV_GROUPS} />
+        <div className="options-shell">
+          <header className="page-head">
+            <p className="eyebrow">Offer-Nail</p>
+            <p className="lead">简历只留本机。只填写，不代交。</p>
+          </header>
+          <div id="import-resume" className="nav-anchor">
+            <ResumeImport
+              resume={resumeData}
+              onApply={persist}
+              llm={
+                llmConfig?.enabled && llmApiKey
+                  ? { apiKey: llmApiKey, model: llmConfig.model }
+                  : undefined
+              }
+            />
+          </div>
+          <div id="llm-settings" className="nav-anchor">
+            <LlmSettings
+              store={llmStore}
+              config={llmConfig}
+              hasApiKey={Boolean(llmApiKey)}
+              onSaved={async (next, hasKey) => {
+                setLlmConfig(next);
+                setLlmApiKey(hasKey ? await llmStore.readApiKey() : undefined);
+              }}
+            />
+          </div>
+          <div id="backup-restore" className="nav-anchor">
+            <VaultBackup
+              repository={repository}
+              session={{
+                lock: async () => {
+                  await browser.runtime.sendMessage({ type: 'offerNail:lock' });
+                },
+              }}
+              secrets={secrets}
+              onRestored={async (restored) => {
+                setResumeData(restored);
+                void browser.runtime.sendMessage({
+                  type: 'offerNail:replacePayload',
+                  data: restored,
+                });
+              }}
+              onReset={() => {
+                setResumeData(undefined);
+                setSiteRules([]);
+                setState('uninitialized');
+              }}
+            />
+          </div>
+          <div id="site-rules" className="nav-anchor">
+            <SiteRulesPanel
+              rules={siteRules}
+              onChange={async (next) => {
+                const current = await repository.listSiteRules();
+                await Promise.all(
+                  current
+                    .filter((rule) => !next.some((item) => item.id === rule.id))
+                    .map((rule) => repository.deleteSiteRule(rule.id)),
+                );
+                await Promise.all(
+                  next.map((rule) =>
+                    repository.writeSiteRule({
+                      ...rule,
+                      origin: rule.origin,
+                    }),
+                  ),
+                );
+                setSiteRules(await repository.listSiteRules());
+              }}
+            />
+          </div>
+          <div id="variant-manager" className="nav-anchor">
+            <VariantManager value={resumeData} onChange={persist} />
+          </div>
+          <ProfileEditor
+            key={resumeData.masterProfile.updatedAt}
+            initialValue={resumeDataToProfileDraft(resumeData)}
+            onSave={(draft) => persist(applyProfileDraft(resumeData, draft))}
+          />
+        </div>
       </div>
     );
   }

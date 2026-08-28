@@ -204,6 +204,17 @@ button.secondary:hover:not(:disabled),
   background: var(--bg);
 }
 
+button.danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+}
+
+button.danger:hover:not(:disabled) {
+  color: #ffffff;
+  background: var(--danger);
+}
+
 .actions {
   display: grid;
   gap: 8px;

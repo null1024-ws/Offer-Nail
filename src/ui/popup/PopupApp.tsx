@@ -27,6 +27,7 @@ export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
   const [outcomes, setOutcomes] = useState<FillOutcome[]>();
   const [undoMessage, setUndoMessage] = useState<string>();
   const [error, setError] = useState<string>();
+  const [confirmReset, setConfirmReset] = useState(false);
 
   useEffect(() => {
     void sendMessage({ type: 'offerNail:status' }).then((response) => {
@@ -152,32 +153,70 @@ export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
           {error}
         </p>
       )}
-      <div className="actions">
-        <button
-          type="button"
-          onClick={async () => {
-            setError(undefined);
-            const response = await sendMessage({
-              type: 'offerNail:scan',
-              variantId: variantId || undefined,
-            });
-            if (!response.ok || !('items' in response)) {
-              setError(!response.ok ? response.error : '扫描失败');
-              return;
-            }
-            setResume(response.resume);
-            setItems(response.items);
-            setOutcomes(undefined);
-            setUndoMessage(undefined);
-            setStatus('preview');
-          }}
-        >
-          扫描当前页
-        </button>
-        <button type="button" className="secondary" onClick={openOptions}>
-          打开设置页
-        </button>
-      </div>
+      {confirmReset ? (
+        <div className="actions">
+          <p className="error" role="alert">
+            删除档案会清除本地简历、网站规则、岗位变体和本机密钥，无法恢复。
+          </p>
+          <button
+            type="button"
+            className="danger"
+            onClick={async () => {
+              setError(undefined);
+              const response = await sendMessage({ type: 'offerNail:reset' });
+              if (!response.ok) {
+                setError(!response.ok ? response.error : '删除失败');
+                return;
+              }
+              setConfirmReset(false);
+              setStatus('uninitialized');
+            }}
+          >
+            确认删除
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => setConfirmReset(false)}
+          >
+            取消
+          </button>
+        </div>
+      ) : (
+        <div className="actions">
+          <button
+            type="button"
+            onClick={async () => {
+              setError(undefined);
+              const response = await sendMessage({
+                type: 'offerNail:scan',
+                variantId: variantId || undefined,
+              });
+              if (!response.ok || !('items' in response)) {
+                setError(!response.ok ? response.error : '扫描失败');
+                return;
+              }
+              setResume(response.resume);
+              setItems(response.items);
+              setOutcomes(undefined);
+              setUndoMessage(undefined);
+              setStatus('preview');
+            }}
+          >
+            扫描当前页
+          </button>
+          <button type="button" className="secondary" onClick={openOptions}>
+            打开设置页
+          </button>
+          <button
+            type="button"
+            className="danger"
+            onClick={() => setConfirmReset(true)}
+          >
+            删除档案
+          </button>
+        </div>
+      )}
     </main>
   );
 }

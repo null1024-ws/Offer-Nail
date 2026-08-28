@@ -110,4 +110,64 @@ describe('applyConfirmedCandidates', () => {
       value: 'new@example.com',
     });
   });
+
+  it('merges repeated records by primary field instead of duplicating', () => {
+    const source = createEmptyResumeData();
+    const school = candidate(
+      'education.school',
+      { kind: 'text', value: '清华大学' },
+      'education:0',
+    );
+    const major = candidate(
+      'education.major',
+      { kind: 'text', value: '计算机科学' },
+      'education:0',
+    );
+
+    const first = applyConfirmedCandidates(source, [
+      { candidate: school, selected: true, overwrite: true, value: school.value },
+    ]);
+    expect(first.masterProfile.educations).toHaveLength(1);
+
+    const second = applyConfirmedCandidates(first, [
+      { candidate: school, selected: true, overwrite: true, value: school.value },
+      { candidate: major, selected: true, overwrite: true, value: major.value },
+    ]);
+    expect(second.masterProfile.educations).toHaveLength(1);
+    expect(
+      second.masterProfile.educations[0]?.fields.map((entry) => entry.fieldId),
+    ).toEqual(expect.arrayContaining(['education.major']));
+  });
+
+  it('appends a new record when the primary field differs', () => {
+    const source = createEmptyResumeData();
+    const schoolA = candidate(
+      'education.school',
+      { kind: 'text', value: '清华大学' },
+      'education:0',
+    );
+    const schoolB = candidate(
+      'education.school',
+      { kind: 'text', value: '北京大学' },
+      'education:1',
+    );
+
+    const first = applyConfirmedCandidates(source, [
+      {
+        candidate: schoolA,
+        selected: true,
+        overwrite: true,
+        value: schoolA.value,
+      },
+    ]);
+    const second = applyConfirmedCandidates(first, [
+      {
+        candidate: schoolB,
+        selected: true,
+        overwrite: true,
+        value: schoolB.value,
+      },
+    ]);
+    expect(second.masterProfile.educations).toHaveLength(2);
+  });
 });
