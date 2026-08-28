@@ -2,12 +2,16 @@ import { decryptVault, encryptVault } from '../vault/crypto';
 import type { DeviceSecretStore } from '../vault/device-secret';
 
 export const DEFAULT_LLM_MODEL = 'deepseek-v4-flash';
-export const LLM_MODEL_CHOICES = [
-  'deepseek-v4-flash',
-  'deepseek-v4-pro',
-  'deepseek-chat',
-  'deepseek-reasoner',
-] as const;
+export const LLM_MODEL_CHOICES = ['deepseek-v4-flash', 'deepseek-v4-pro'] as const;
+
+const LEGACY_MODEL_ALIASES: Record<string, string> = {
+  'deepseek-chat': 'deepseek-v4-flash',
+  'deepseek-reasoner': 'deepseek-v4-flash',
+};
+
+export function normalizeModel(model: string): string {
+  return LEGACY_MODEL_ALIASES[model] ?? model;
+}
 
 const LLM_CONFIG_KEY = 'offerNailLlmConfig';
 const LLM_API_KEY_KEY = 'offerNailLlmApiKey';
@@ -41,7 +45,7 @@ export class BrowserLlmConfigStore implements LlmConfigStore {
     const result = await browser.storage.local.get(LLM_CONFIG_KEY);
     const value = result[LLM_CONFIG_KEY];
     return isValidConfig(value)
-      ? { enabled: value.enabled, model: value.model }
+      ? { enabled: value.enabled, model: normalizeModel(value.model) }
       : undefined;
   }
 

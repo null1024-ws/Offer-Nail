@@ -31,6 +31,7 @@ describe('chatJsonCompletion', () => {
     const body = JSON.parse(init.body as string);
     expect(body.model).toBe('deepseek-v4-flash');
     expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.thinking).toEqual({ type: 'disabled' });
   });
 
   it('reports an invalid key on 401', async () => {

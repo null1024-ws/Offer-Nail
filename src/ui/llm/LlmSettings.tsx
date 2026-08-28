@@ -87,7 +87,7 @@ export function LlmSettings({
           </label>
           <p className="hint">
             启用后，导入简历时会把简历文本发送到 DeepSeek
-            进行识别。识别结果仍需你在导入界面逐条确认后才写入档案。
+            进行识别。识别结果与本地规则解析合并后直接填入档案，你可再编辑或删除。
           </p>
           <div className="actions">
             <button type="button" onClick={save} disabled={busy}>

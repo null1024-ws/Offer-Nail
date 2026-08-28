@@ -51,6 +51,7 @@ export async function chatJsonCompletion(
           model: options.model,
           messages,
           response_format: { type: 'json_object' },
+          thinking: { type: 'disabled' },
           max_tokens: options.maxTokens ?? 4096,
           temperature: options.temperature ?? 0,
         }),

@@ -3,6 +3,7 @@ import { MemoryDeviceSecretStore } from '../vault/device-secret';
 import {
   BrowserLlmConfigStore,
   MemoryLlmConfigStore,
+  normalizeModel,
 } from './config';
 
 function installBrowserStorageMock() {
@@ -25,6 +26,15 @@ function installBrowserStorageMock() {
   });
   return storage;
 }
+
+describe('normalizeModel', () => {
+  it('maps retired aliases to the current flash model and keeps v4 ids', () => {
+    expect(normalizeModel('deepseek-chat')).toBe('deepseek-v4-flash');
+    expect(normalizeModel('deepseek-reasoner')).toBe('deepseek-v4-flash');
+    expect(normalizeModel('deepseek-v4-flash')).toBe('deepseek-v4-flash');
+    expect(normalizeModel('deepseek-v4-pro')).toBe('deepseek-v4-pro');
+  });
+});
 
 describe('MemoryLlmConfigStore', () => {
   it('reads, writes and clears config while preserving an unset api key', async () => {
