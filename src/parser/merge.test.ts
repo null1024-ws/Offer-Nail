@@ -170,4 +170,36 @@ describe('applyConfirmedCandidates', () => {
     ]);
     expect(second.masterProfile.educations).toHaveLength(2);
   });
+
+  it('merges records whose primary field differs only by whitespace', () => {
+    const source = createEmptyResumeData();
+    const school = candidate(
+      'education.school',
+      { kind: 'text', value: '清华大学' },
+      'education:0',
+    );
+    const schoolSpaced = candidate(
+      'education.school',
+      { kind: 'text', value: ' 清华大学 ' },
+      'education:0',
+    );
+
+    const first = applyConfirmedCandidates(source, [
+      {
+        candidate: school,
+        selected: true,
+        overwrite: true,
+        value: school.value,
+      },
+    ]);
+    const second = applyConfirmedCandidates(first, [
+      {
+        candidate: schoolSpaced,
+        selected: true,
+        overwrite: true,
+        value: schoolSpaced.value,
+      },
+    ]);
+    expect(second.masterProfile.educations).toHaveLength(1);
+  });
 });

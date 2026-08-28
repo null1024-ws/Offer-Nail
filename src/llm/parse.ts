@@ -7,6 +7,10 @@ import {
 } from '../domain/resume/field-catalog';
 import type { FieldValue } from '../domain/resume/schema';
 import { parseDate, parseRange, type FieldCandidate } from '../parser/candidates';
+import {
+  REPEAT_PRIMARY_FIELD,
+  primaryFieldValueKey,
+} from '../parser/merge';
 import { chatJsonCompletion, LlmRequestError } from './deepseek';
 import {
   buildLlmSystemPrompt,
@@ -154,8 +158,16 @@ export function candidatesFromLlm(output: LlmOutput): FieldCandidate[] {
 }
 
 function valueKey(fieldId: string, value: FieldValue): string {
-  const raw = 'value' in value ? value.value : undefined;
+  let raw: unknown = 'value' in value ? value.value : undefined;
+  if (typeof raw === 'string') raw = raw.replace(/\s+/g, ' ').trim();
   return `${fieldId}:${JSON.stringify(raw)}`;
+}
+
+function primaryValueOf(candidate: FieldCandidate): string | undefined {
+  const section = fieldCatalog[candidate.fieldId].section;
+  const primaryId = REPEAT_PRIMARY_FIELD[section as keyof typeof REPEAT_PRIMARY_FIELD];
+  if (!primaryId || candidate.fieldId !== primaryId) return undefined;
+  return primaryFieldValueKey(candidate.value);
 }
 
 export function mergeCandidates(
@@ -166,13 +178,54 @@ export function mergeCandidates(
   for (const candidate of rule) {
     seen.add(valueKey(candidate.fieldId, candidate.value));
   }
+
+  // Index rule repeat-section records by their primary field value so that
+  // LLM-only fields can be re-keyed onto the matching rule record. This keeps
+  // the recordKey groups aligned even when the LLM returns records in a
+  // different order, preventing spurious duplicate records on re-import.
+  const rulePrimaryBySection = new Map<string, Map<string, string>>();
+  for (const candidate of rule) {
+    const section = fieldCatalog[candidate.fieldId].section;
+    const primaryValue = primaryValueOf(candidate);
+    if (!primaryValue) continue;
+    let byValue = rulePrimaryBySection.get(section);
+    if (!byValue) {
+      byValue = new Map();
+      rulePrimaryBySection.set(section, byValue);
+    }
+    if (!byValue.has(primaryValue)) {
+      byValue.set(primaryValue, candidate.recordKey);
+    }
+  }
+
+  // Resolve each LLM repeat record's primary value (via its own recordKey).
+  const llmPrimaryByRecord = new Map<string, string>();
+  for (const candidate of llm) {
+    const primaryValue = primaryValueOf(candidate);
+    if (primaryValue) llmPrimaryByRecord.set(candidate.recordKey, primaryValue);
+  }
+
   const additions = llm.filter((candidate) => {
     const key = valueKey(candidate.fieldId, candidate.value);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
-  return [...rule, ...additions];
+
+  const rekeyed = additions.map((candidate) => {
+    const section = fieldCatalog[candidate.fieldId].section;
+    const primaryId =
+      REPEAT_PRIMARY_FIELD[section as keyof typeof REPEAT_PRIMARY_FIELD];
+    if (!primaryId) return candidate;
+    const primaryValue = llmPrimaryByRecord.get(candidate.recordKey);
+    const ruleKey = primaryValue
+      ? rulePrimaryBySection.get(section)?.get(primaryValue)
+      : undefined;
+    if (!ruleKey) return candidate;
+    return { ...candidate, recordKey: ruleKey };
+  });
+
+  return [...rule, ...rekeyed];
 }
 
 export function parseLlmOutput(raw: string): LlmOutput {

@@ -101,4 +101,70 @@ describe('mergeCandidates', () => {
       merged.find((item) => item.fieldId === 'skill.name')?.confidence,
     ).toBe('medium');
   });
+
+  it('re-keys llm repeat fields onto the matching rule record', () => {
+    const rule: FieldCandidate[] = [
+      {
+        fieldId: 'education.school',
+        value: { kind: 'text', value: '清华大学' },
+        confidence: 'high',
+        recordKey: 'education:0',
+        source: { lineId: 'line:0', text: '清华大学' },
+      },
+      {
+        fieldId: 'education.school',
+        value: { kind: 'text', value: '北京大学' },
+        confidence: 'high',
+        recordKey: 'education:1',
+        source: { lineId: 'line:1', text: '北京大学' },
+      },
+    ];
+    // LLM returns the same schools in reverse order, so its gpa for 清华
+    // arrives under education:1 and for 北大 under education:0.
+    const llm: FieldCandidate[] = [
+      {
+        fieldId: 'education.school',
+        value: { kind: 'text', value: '北京大学' },
+        confidence: 'medium',
+        recordKey: 'education:0',
+        source: { lineId: 'llm:0', text: '北京大学' },
+      },
+      {
+        fieldId: 'education.gpa',
+        value: { kind: 'number', value: 3.8 },
+        confidence: 'medium',
+        recordKey: 'education:0',
+        source: { lineId: 'llm:1', text: '3.8' },
+      },
+      {
+        fieldId: 'education.school',
+        value: { kind: 'text', value: '清华大学' },
+        confidence: 'medium',
+        recordKey: 'education:1',
+        source: { lineId: 'llm:2', text: '清华大学' },
+      },
+      {
+        fieldId: 'education.gpa',
+        value: { kind: 'number', value: 3.9 },
+        confidence: 'medium',
+        recordKey: 'education:1',
+        source: { lineId: 'llm:3', text: '3.9' },
+      },
+    ];
+    const merged = mergeCandidates(rule, llm);
+    const tsinghuaGpa = merged.find(
+      (candidate) =>
+        candidate.fieldId === 'education.gpa' &&
+        candidate.value.kind === 'number' &&
+        candidate.value.value === 3.9,
+    );
+    const pkuGpa = merged.find(
+      (candidate) =>
+        candidate.fieldId === 'education.gpa' &&
+        candidate.value.kind === 'number' &&
+        candidate.value.value === 3.8,
+    );
+    expect(tsinghuaGpa?.recordKey).toBe('education:0');
+    expect(pkuGpa?.recordKey).toBe('education:1');
+  });
 });

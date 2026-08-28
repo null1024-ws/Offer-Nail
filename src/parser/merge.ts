@@ -38,7 +38,7 @@ const REPEAT_PROPERTIES = {
 
 type RepeatSection = keyof typeof REPEAT_PROPERTIES;
 
-const REPEAT_PRIMARY_FIELD: Record<RepeatSection, ResumeFieldId> = {
+export const REPEAT_PRIMARY_FIELD: Record<RepeatSection, ResumeFieldId> = {
   education: 'education.school',
   employment: 'employment.company',
   project: 'project.name',
@@ -55,9 +55,16 @@ const REPEAT_PRIMARY_FIELD: Record<RepeatSection, ResumeFieldId> = {
   referee: 'referee.name',
 };
 
-function fieldValueKey(value: FieldValue | undefined): string | undefined {
+export function primaryFieldValueKey(
+  value: FieldValue | undefined,
+): string | undefined {
   if (!value) return undefined;
   if (value.kind === 'attachment') return `attachment:${value.attachmentId}`;
+  if (value.kind === 'text') {
+    const text = value.value.replace(/\s+/g, ' ').trim();
+    if (!text) return undefined;
+    return `text:${text}`;
+  }
   return `${value.kind}:${JSON.stringify(value.value)}`;
 }
 
@@ -166,7 +173,7 @@ export function applyConfirmedCandidates(
       (decision) => decision.candidate.fieldId === primaryFieldId,
     );
     const primaryKey = primaryDecision
-      ? fieldValueKey(primaryDecision.value)
+      ? primaryFieldValueKey(primaryDecision.value)
       : undefined;
     const target =
       primaryKey === undefined
@@ -175,7 +182,7 @@ export function applyConfirmedCandidates(
             const existing = record.fields.find(
               (entry) => entry.fieldId === primaryFieldId,
             );
-            return fieldValueKey(existing?.value) === primaryKey;
+            return primaryFieldValueKey(existing?.value) === primaryKey;
           });
     if (target) {
       group.forEach((decision) => {
