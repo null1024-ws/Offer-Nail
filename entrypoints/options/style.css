@@ -188,6 +188,36 @@ small {
   font-weight: 600;
 }
 
+.import-notice {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.import-notice p {
+  margin: 0;
+}
+
+.import-notice details {
+  margin-top: 8px;
+}
+
+.import-notice summary {
+  cursor: pointer;
+  color: var(--accent-hover);
+}
+
+.import-notice ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 0.92em;
+}
+
 @media (min-width: 640px) {
   .import-candidate-grid {
     grid-template-columns: 1fr 1fr;

@@ -173,7 +173,7 @@ describe('parseResumeCandidates', () => {
     ]);
   });
 
-  it('does not leak research and award sections into employment', () => {
+  it('routes research projects and awards to their own sections, not employment', () => {
     const result = parseResumeCandidates(
       sourceLinesFromText(
         [
@@ -190,9 +190,16 @@ describe('parseResumeCandidates', () => {
     expect(values('employment.company', result)).toEqual([
       { kind: 'text', value: '示例公司' },
     ]);
-    expect(result.unmapped.map((line) => line.text)).toContain('某研究项目');
-    expect(result.unmapped.map((line) => line.text)).toContain(
-      '优秀学生奖学金',
-    );
+    expect(values('project.name', result)).toEqual([
+      { kind: 'text', value: '某研究项目' },
+    ]);
+    expect(values('award.name', result)).toEqual([
+      { kind: 'text', value: '优秀学生奖学金' },
+    ]);
+    expect(
+      result.candidates.filter((item) => item.fieldId === 'employment.position'),
+    ).toEqual([
+      expect.objectContaining({ fieldId: 'employment.position' }),
+    ]);
   });
 });

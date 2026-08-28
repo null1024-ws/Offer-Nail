@@ -5,15 +5,15 @@ import {
   resumeDataToProfileDraft,
   type ResumeData,
 } from '../../src/domain/resume';
-import { ImportReview } from '../../src/ui/import/ImportReview';
 import { Onboarding } from '../../src/ui/onboarding/Onboarding';
 import { ProfileEditor } from '../../src/ui/profile/ProfileEditor';
 import { SiteRulesPanel } from '../../src/ui/rules/SiteRulesPanel';
 import { VariantManager } from '../../src/ui/variants/VariantManager';
 import { VaultBackup } from '../../src/ui/vault/VaultBackup';
 import {
+  applyConfirmedCandidates,
   parseResumeImportWithText,
-  type FieldCandidate,
+  type CandidateDecision,
   type SourceLine,
 } from '../../src/parser';
 import {
@@ -240,36 +240,20 @@ function ResumeImport({
   onApply: (next: ResumeData) => Promise<void>;
   llm?: { apiKey: string; model: string };
 }) {
-  const [review, setReview] = useState<{
-    candidates: FieldCandidate[];
+  const [notice, setNotice] = useState<{
+    applied: number;
     unmapped: SourceLine[];
   }>();
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
-  if (review) {
-    return (
-      <ImportReview
-        resume={resume}
-        candidates={review.candidates}
-        unmapped={review.unmapped}
-        onCancel={() => setReview(undefined)}
-        onApply={async (next) => {
-          await onApply(next);
-          setReview(undefined);
-        }}
-      />
-    );
-  }
-
   return (
     <section className="resume-import" aria-labelledby="import-entry-title">
       <h2 id="import-entry-title">导入简历</h2>
       <p>
-        选择本地 PDF、DOCX
-        或图片。解析和文字识别只在此设备完成
+        选择本地 PDF、DOCX 或图片。解析与文字识别只在此设备完成
         {llm ? '，并会用 AI 辅助提取更丰富的字段' : ''}
-        ；未确认的候选不会写入档案。
+        ；结果会直接填入下方档案，你可以再编辑或删除。
       </p>
       <input
         type="file"
@@ -280,6 +264,7 @@ function ResumeImport({
           event.target.value = '';
           if (!file) return;
           setError(undefined);
+          setNotice(undefined);
           setBusy(true);
           try {
             const bytes = new Uint8Array(await file.arrayBuffer());
@@ -288,36 +273,38 @@ function ResumeImport({
               file.name,
               file.type,
             );
+            let candidates = parsed.candidates;
             if (llm) {
               try {
-                const llmCandidates = await extractResumeWithLlm(
-                  parsed.fullText,
-                  { apiKey: llm.apiKey, model: llm.model },
+                candidates = mergeCandidates(
+                  parsed.candidates,
+                  await extractResumeWithLlm(parsed.fullText, {
+                    apiKey: llm.apiKey,
+                    model: llm.model,
+                  }),
                 );
-                setReview({
-                  candidates: mergeCandidates(
-                    parsed.candidates,
-                    llmCandidates,
-                  ),
-                  unmapped: parsed.unmapped,
-                });
               } catch (cause) {
                 setError(
                   cause instanceof Error
                     ? `AI 辅助识别失败，已改用本地解析：${cause.message}`
                     : 'AI 辅助识别失败，已改用本地解析。',
                 );
-                setReview({
-                  candidates: parsed.candidates,
-                  unmapped: parsed.unmapped,
-                });
               }
-            } else {
-              setReview({
-                candidates: parsed.candidates,
-                unmapped: parsed.unmapped,
-              });
             }
+            const decisions: CandidateDecision[] = candidates.map(
+              (candidate) => ({
+                candidate,
+                selected: true,
+                overwrite: true,
+                value: candidate.value,
+              }),
+            );
+            const next = applyConfirmedCandidates(resume, decisions);
+            await onApply(next);
+            setNotice({
+              applied: candidates.length,
+              unmapped: parsed.unmapped,
+            });
           } catch (cause) {
             setError(
               cause instanceof Error
@@ -340,6 +327,26 @@ function ResumeImport({
         <p className="error" role="alert">
           {error}
         </p>
+      )}
+      {notice && (
+        <div className="import-notice" role="status">
+          <p>
+            已导入 {notice.applied}{' '}
+            个字段，并直接写入下方档案。请在下滑后的「档案」区域检查、编辑或删除。
+          </p>
+          {notice.unmapped.length > 0 && (
+            <details>
+              <summary>
+                有 {notice.unmapped.length} 行文本未自动识别，可手动补充
+              </summary>
+              <ul>
+                {notice.unmapped.map((line) => (
+                  <li key={line.id}>{line.text}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
       )}
     </section>
   );

@@ -136,6 +136,13 @@ async function ocrPdfPages(
   return blocks;
 }
 
+const LINE_Y_TOLERANCE = 2;
+
+function cleanTextItem(text: string): string {
+  // eslint-disable-next-line no-control-regex -- strip PDF control characters and DEL
+  return text.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
+}
+
 async function extractBlocks(
   document: PDFDocumentProxy,
 ): Promise<PdfTextBlock[]> {
@@ -143,17 +150,42 @@ async function extractBlocks(
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
     const page = await document.getPage(pageNumber);
     const content = await page.getTextContent();
-    content.items.forEach((item) => {
-      if (!('str' in item) || !('transform' in item)) return;
-      const text = item.str.trim();
-      if (!text) return;
+    const items = content.items
+      .flatMap((item) => {
+        if (!('str' in item) || !('transform' in item)) return [];
+        return [
+          {
+            text: cleanTextItem(item.str),
+            x: item.transform[4] ?? 0,
+            y: item.transform[5] ?? 0,
+          },
+        ];
+      })
+      .filter((item) => item.text.length > 0)
+      .sort((a, b) => b.y - a.y || a.x - b.x);
+
+    const lines: Array<{
+      y: number;
+      parts: Array<{ text: string; x: number }>;
+    }> = [];
+    for (const item of items) {
+      const current = lines[lines.length - 1];
+      if (!current || Math.abs(item.y - current.y) > LINE_Y_TOLERANCE) {
+        lines.push({ y: item.y, parts: [item] });
+      } else {
+        current.parts.push(item);
+      }
+    }
+
+    for (const line of lines) {
+      line.parts.sort((a, b) => a.x - b.x);
       blocks.push({
         pageNumber,
-        text,
-        x: item.transform[4] ?? 0,
-        y: item.transform[5] ?? 0,
+        text: line.parts.map((part) => part.text).join(' '),
+        x: line.parts[0]?.x ?? 0,
+        y: line.y,
       });
-    });
+    }
   }
   return blocks;
 }
