@@ -154,10 +154,13 @@ function Options() {
                 },
               },
               secrets,
+              () => llmStore.clear(),
             );
             setConfirmReset(false);
             setResumeData(undefined);
             setSiteRules([]);
+            setLlmConfig(undefined);
+            setLlmApiKey(undefined);
             setState('uninitialized');
           }}
         >
@@ -215,6 +218,7 @@ function Options() {
                 },
               }}
               secrets={secrets}
+              clearLlmConfig={() => llmStore.clear()}
               onRestored={async (restored) => {
                 setResumeData(restored);
                 void browser.runtime.sendMessage({
@@ -225,6 +229,8 @@ function Options() {
               onReset={() => {
                 setResumeData(undefined);
                 setSiteRules([]);
+                setLlmConfig(undefined);
+                setLlmApiKey(undefined);
                 setState('uninitialized');
               }}
             />

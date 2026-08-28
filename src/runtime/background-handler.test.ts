@@ -92,10 +92,14 @@ describe('background fill handler', () => {
     await saveProfile(repository, seededResume(), secrets);
     const session = new VaultSession<ResumeData>(new MemoryMarkerStore());
     await session.initialize();
+    let llmCleared = false;
     const handle = createBackgroundHandler({
       session,
       repository,
       secrets,
+      clearLlmConfig: async () => {
+        llmCleared = true;
+      },
       getActiveTabId: async () => 1,
       ensureScript: async () => undefined,
       sendToTab: async () => ({ ok: false, error: 'unused' }),
@@ -108,6 +112,7 @@ describe('background fill handler', () => {
     expect(reset.ok).toBe(true);
     expect(await repository.readVault()).toBeUndefined();
     expect(await secrets.read()).toBeUndefined();
+    expect(llmCleared).toBe(true);
 
     await repository.destroy();
   });

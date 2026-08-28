@@ -156,7 +156,8 @@ export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
       {confirmReset ? (
         <div className="actions">
           <p className="error" role="alert">
-            删除档案会清除本地简历、网站规则、岗位变体和本机密钥，无法恢复。
+            删除档案会清除本地简历、网站规则、岗位变体、本机密钥和 AI
+            设置，无法恢复。
           </p>
           <button
             type="button"

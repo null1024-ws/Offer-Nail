@@ -23,6 +23,7 @@ export interface BackgroundFillDeps {
   getActiveTabId: () => Promise<number>;
   ensureScript: (tabId: number) => Promise<void>;
   sendToTab: (tabId: number, message: ExtensionRequest) => Promise<unknown>;
+  clearLlmConfig?: () => Promise<void>;
 }
 
 export function createBackgroundHandler(deps: BackgroundFillDeps) {
@@ -88,7 +89,12 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
       }
 
       if (request.type === 'offerNail:reset') {
-        await resetLocalData(deps.repository, deps.session, deps.secrets);
+        await resetLocalData(
+          deps.repository,
+          deps.session,
+          deps.secrets,
+          deps.clearLlmConfig,
+        );
         lastPlan = undefined;
         return { ok: true };
       }

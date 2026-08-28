@@ -30,7 +30,7 @@ describe('VaultBackup', () => {
     expect(screen.getByRole('button', { name: '彻底删除' })).toBeDisabled();
     await user.click(
       screen.getByRole('checkbox', {
-        name: '我确认要彻底删除本地保险库、规则和附件',
+        name: '我确认要彻底删除本地保险库、规则、附件和 AI 辅助识别设置',
       }),
     );
     expect(screen.getByRole('button', { name: '彻底删除' })).toBeEnabled();

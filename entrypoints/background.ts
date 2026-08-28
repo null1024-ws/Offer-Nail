@@ -1,4 +1,5 @@
 import { BrowserDeviceSecretStore } from '../src/vault/device-secret';
+import { BrowserLlmConfigStore } from '../src/llm/config';
 import { BrowserSessionMarkerStore, VaultSession } from '../src/vault/session';
 import { VaultRepository } from '../src/vault/repository';
 import { createBackgroundHandler } from '../src/runtime/background-handler';
@@ -11,6 +12,7 @@ import type { ResumeData } from '../src/domain/resume';
 export default defineBackground(() => {
   const repository = new VaultRepository();
   const secrets = new BrowserDeviceSecretStore();
+  const llmStore = new BrowserLlmConfigStore(secrets);
   const vaultSession = new VaultSession<ResumeData>(
     new BrowserSessionMarkerStore(),
   );
@@ -20,6 +22,7 @@ export default defineBackground(() => {
     session: vaultSession,
     repository,
     secrets,
+    clearLlmConfig: () => llmStore.clear(),
     async getActiveTabId() {
       const [tab] = await browser.tabs.query({
         active: true,

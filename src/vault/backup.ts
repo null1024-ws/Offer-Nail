@@ -137,8 +137,10 @@ export async function resetLocalData(
   repository: BackupRepository,
   session: LockableSession,
   secrets: DeviceSecretStore,
+  clearExtras?: () => Promise<void>,
 ): Promise<void> {
   await session.lock();
   await repository.clearAll();
   await secrets.clear();
+  await clearExtras?.();
 }

@@ -15,6 +15,7 @@ export interface VaultBackupProps {
   repository: BackupRepository;
   session: LockableSession;
   secrets: DeviceSecretStore;
+  clearLlmConfig?: () => Promise<void>;
   onRestored: (data: ResumeData) => Promise<void> | void;
   onReset: () => Promise<void> | void;
 }
@@ -23,6 +24,7 @@ export function VaultBackup({
   repository,
   session,
   secrets,
+  clearLlmConfig,
   onRestored,
   onReset,
 }: VaultBackupProps) {
@@ -122,14 +124,14 @@ export function VaultBackup({
           checked={confirmReset}
           onChange={(event) => setConfirmReset(event.target.checked)}
         />
-        我确认要彻底删除本地保险库、规则和附件
+        我确认要彻底删除本地保险库、规则、附件和 AI 辅助识别设置
       </label>
       <button
         type="button"
         disabled={!confirmReset}
         onClick={async () => {
           setError(undefined);
-          await resetLocalData(repository, session, secrets);
+          await resetLocalData(repository, session, secrets, clearLlmConfig);
           await onReset();
         }}
       >

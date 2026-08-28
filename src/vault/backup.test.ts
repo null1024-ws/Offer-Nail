@@ -138,4 +138,17 @@ describe('encrypted backup', () => {
     expect(repository.vault).toBeUndefined();
     await expect(secrets.read()).resolves.toBeUndefined();
   });
+
+  it('clears extra local data (e.g. LLM config) when a callback is provided', async () => {
+    const repository = new MemoryRepository();
+    const secrets = new MemoryDeviceSecretStore(
+      'device-secret-for-tests-32bytes-min!!',
+    );
+    const clearExtras = vi.fn(async () => undefined);
+
+    await resetLocalData(repository, { lock: async () => undefined }, secrets, clearExtras);
+    expect(clearExtras).toHaveBeenCalledOnce();
+    expect(repository.cleared).toBe(true);
+    await expect(secrets.read()).resolves.toBeUndefined();
+  });
 });
