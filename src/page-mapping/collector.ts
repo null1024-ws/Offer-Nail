@@ -22,6 +22,7 @@ export interface CollectedField {
   name: string;
   idAttr: string;
   label: string;
+  autocomplete: string;
   nearbyText: string;
   group: string;
   options: string[];
@@ -138,6 +139,7 @@ function describeField(element: Element, index: number): CollectedField {
     name: control.name ?? '',
     idAttr: element.id,
     label: clip(label),
+    autocomplete: control.autocomplete ?? '',
     nearbyText: clip(nearbyText(element, label, group)),
     group: clip(group),
     options: fieldOptions(element).map((option) => clip(option)),
@@ -241,7 +243,11 @@ function fieldLabel(element: Element): string {
   }
   const wrapping = element.closest('label');
   if (wrapping) return visibleFieldLabel(element, labelText(wrapping, element));
-  return fieldsetLegend(element);
+  const legend = fieldsetLegend(element);
+  if (legend) return legend;
+  const placeholder = asControl(element).placeholder;
+  if (placeholder) return normalize(placeholder);
+  return '';
 }
 
 function visibleFieldLabel(element: Element, raw: string): string {
@@ -368,6 +374,7 @@ function collectInaccessible(root: Document): InaccessibleRegion[] {
     if (host.shadowRoot) continue;
     if (host.querySelector('input, textarea, select')) continue;
     if (host.childElementCount > 0) continue;
+    if (!looksLikeWidget(host)) continue;
     const labeled = fieldLabel(host) || host.closest('label')?.textContent;
     if (!labeled) continue;
     regions.push({
@@ -389,6 +396,21 @@ function* walkHostCandidates(root: Document | ShadowRoot): Generator<Element> {
     }
     current = walker.nextNode();
   }
+}
+
+function looksLikeWidget(host: Element): boolean {
+  if (host.tagName.includes('-')) return true;
+  if (
+    host.hasAttribute('role') ||
+    host.hasAttribute('tabindex') ||
+    host.hasAttribute('contenteditable') ||
+    host.hasAttribute('data-control')
+  ) {
+    return true;
+  }
+  return Array.from(host.attributes).some((attr) =>
+    attr.name.startsWith('aria-'),
+  );
 }
 
 function pageSample(root: Document): string {

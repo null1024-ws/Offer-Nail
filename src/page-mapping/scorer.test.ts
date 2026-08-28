@@ -33,6 +33,7 @@ function collected(override: Partial<CollectedField>): CollectedField {
     name: '',
     idAttr: '',
     label: '',
+    autocomplete: '',
     nearbyText: '',
     group: '',
     options: [],
@@ -117,6 +118,29 @@ describe('scorePageFields', () => {
     );
     expect(scored.autoSelected).toBeUndefined();
     expect(scored.candidates[0]?.confidence).not.toBe('high');
+  });
+
+  it('does not map an unlabeled textarea to summary or description', () => {
+    const scored = scoreCollectedField(
+      collected({
+        kind: 'textarea',
+        tagName: 'textarea',
+        type: 'textarea',
+        label: '',
+      }),
+    );
+    expect(scored.candidates).toHaveLength(0);
+    expect(scored.autoSelected).toBeUndefined();
+  });
+
+  it('maps autocomplete hints even without a visible label', () => {
+    const scored = scoreCollectedField(
+      collected({ label: '', autocomplete: 'tel' }),
+    );
+    expect(scored.candidates[0]?.fieldId).toBe('personal.phone');
+    expect(scored.candidates[0]?.reasons).toEqual(
+      expect.arrayContaining([expect.stringContaining('autocomplete')]),
+    );
   });
 });
 

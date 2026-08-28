@@ -1,6 +1,7 @@
 import {
   fieldCatalog,
   type FieldValueKind,
+  type ResumeFieldId,
   type ResumeSection,
 } from '../domain/resume/field-catalog';
 import type { CollectedField, PageCollection } from './collector';
@@ -45,6 +46,26 @@ const LOCKED_SECTIONS = new Set<ResumeSection>([
   'project',
   'research',
 ]);
+
+const AUTOCOMPLETE_MAP: Record<string, ResumeFieldId> = {
+  name: 'personal.fullName',
+  'given-name': 'personal.fullName',
+  'family-name': 'personal.fullName',
+  'additional-name': 'personal.fullName',
+  nickname: 'personal.fullName',
+  tel: 'personal.phone',
+  'tel-national': 'personal.phone',
+  'tel-local': 'personal.phone',
+  email: 'personal.email',
+  url: 'personal.github',
+  organization: 'employment.company',
+  'organization-title': 'employment.position',
+  'job-title': 'employment.position',
+  sex: 'personal.gender',
+  bday: 'personal.birthDate',
+  'address-level2': 'personal.currentCity',
+  'address-line1': 'personal.currentCity',
+};
 
 export function scorePageFields(
   source: PageCollection | CollectedField[],
@@ -103,6 +124,12 @@ function scoreAgainst(
   const label = compactText(field.label);
   const nearby = compactText(`${field.label} ${field.nearbyText}`);
   const attr = attrKey(field.name || field.idAttr);
+  const autocomplete = field.autocomplete?.toLowerCase().trim();
+
+  if (autocomplete && AUTOCOMPLETE_MAP[autocomplete] === entry.fieldId) {
+    score += 40;
+    reasons.push(`autocomplete="${field.autocomplete}" 指向该字段`);
+  }
 
   if (entry.synonyms.includes(label)) {
     score += 50;
@@ -167,7 +194,11 @@ function scoreAgainst(
     score += 20;
     reasons.push('选项符合学历层次');
   }
-  if (field.kind === 'textarea' && /summary|description/.test(entry.fieldId)) {
+  if (
+    label &&
+    field.kind === 'textarea' &&
+    /summary|description/.test(entry.fieldId)
+  ) {
     score += 15;
     reasons.push('多行文本符合简介/描述类字段');
   }

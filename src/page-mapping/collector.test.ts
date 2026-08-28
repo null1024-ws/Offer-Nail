@@ -67,4 +67,23 @@ describe('collectPageFields', () => {
       expect.arrayContaining(['unsupported', 'closedShadow']),
     );
   });
+
+  it('uses placeholder as a label fallback', () => {
+    const document = new JSDOM(
+      `<form><input name="nickname" placeholder="请输入昵称" /></form>`,
+    ).window.document;
+    const collection = collectPageFields(document);
+    const field = collection.fields.find((item) => item.name === 'nickname');
+    expect(field?.label).toBe('请输入昵称');
+  });
+
+  it('does not treat a plain text div as a closed-shadow widget', () => {
+    const document = new JSDOM(
+      `<form><div>至今</div><div>至今</div></form>`,
+    ).window.document;
+    const collection = collectPageFields(document);
+    expect(
+      collection.inaccessible.some((region) => region.reason === 'closedShadow'),
+    ).toBe(false);
+  });
 });
