@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import { FillPreview } from '../fill/FillPreview';
-import type { ResumeData } from '../../domain/resume/schema';
+import { FillResult } from '../fill/FillResult';
 import type { FillOutcome } from '../../fill-engine/adapters';
-import type { FillPreviewItem } from '../../fill-engine/preview';
 import type {
   ExtensionRequest,
   ExtensionResponse,
@@ -15,15 +13,13 @@ export interface PopupAppProps {
 
 export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
   const [status, setStatus] = useState<
-    'loading' | 'uninitialized' | 'locked' | 'ready' | 'preview'
+    'loading' | 'uninitialized' | 'locked' | 'ready' | 'result'
   >('loading');
   const [profileName, setProfileName] = useState('');
   const [variants, setVariants] = useState<Array<{ id: string; name: string }>>(
     [],
   );
   const [variantId, setVariantId] = useState('');
-  const [resume, setResume] = useState<ResumeData>();
-  const [items, setItems] = useState<FillPreviewItem[]>([]);
   const [outcomes, setOutcomes] = useState<FillOutcome[]>();
   const [undoMessage, setUndoMessage] = useState<string>();
   const [error, setError] = useState<string>();
@@ -86,29 +82,15 @@ export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
     );
   }
 
-  if (status === 'preview' && resume) {
+  if (status === 'result') {
     return (
-      <FillPreview
-        resume={resume}
-        items={items}
+      <FillResult
         outcomes={outcomes}
         undoMessage={undoMessage}
-        onCancel={() => {
+        onBack={() => {
           setOutcomes(undefined);
           setUndoMessage(undefined);
           setStatus('ready');
-        }}
-        onConfirm={async (selected) => {
-          const response = await sendMessage({
-            type: 'offerNail:confirmFill',
-            items: selected,
-          });
-          if (!response.ok || !('outcomes' in response)) {
-            setError(!response.ok ? response.error : '填写失败');
-            return;
-          }
-          setOutcomes(response.outcomes);
-          setUndoMessage(undefined);
         }}
         onUndo={async () => {
           const response = await sendMessage({ type: 'offerNail:undoFill' });
@@ -131,7 +113,7 @@ export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
     <main>
       <p className="eyebrow">Offer-Nail</p>
       <h1>{profileName || '本地档案'}</h1>
-      <p>扫描当前页后面试填写预览。确认前不会改动页面，也永远不会自动提交。</p>
+      <p>扫描当前页后直接填写。高置信且非敏感、页面为空的字段会自动填入，且永远不会自动提交。</p>
       {variants.length > 0 && (
         <label>
           岗位变体
@@ -189,22 +171,21 @@ export function PopupApp({ sendMessage, openOptions }: PopupAppProps) {
             type="button"
             onClick={async () => {
               setError(undefined);
+              setOutcomes(undefined);
+              setUndoMessage(undefined);
               const response = await sendMessage({
                 type: 'offerNail:scan',
                 variantId: variantId || undefined,
               });
-              if (!response.ok || !('items' in response)) {
+              if (!response.ok || !('outcomes' in response)) {
                 setError(!response.ok ? response.error : '扫描失败');
                 return;
               }
-              setResume(response.resume);
-              setItems(response.items);
-              setOutcomes(undefined);
-              setUndoMessage(undefined);
-              setStatus('preview');
+              setOutcomes(response.outcomes);
+              setStatus('result');
             }}
           >
-            扫描当前页
+            扫描并填写
           </button>
           <button type="button" className="secondary" onClick={openOptions}>
             打开设置页

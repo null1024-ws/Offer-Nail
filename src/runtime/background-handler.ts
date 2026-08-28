@@ -7,9 +7,7 @@ import {
   fillRequestFromPreview,
   planPageFill,
   rulesFromConfirmedFill,
-  type PageFillPlan,
 } from '../fill-engine';
-import type { PageCollection } from '../page-mapping/collector';
 import type { DeviceSecretStore } from '../vault/device-secret';
 import type { VaultRepository } from '../vault/repository';
 import { VaultLockedError, type VaultSession } from '../vault/session';
@@ -27,13 +25,6 @@ export interface BackgroundFillDeps {
 }
 
 export function createBackgroundHandler(deps: BackgroundFillDeps) {
-  let lastPlan:
-    | {
-        collection: PageCollection;
-        plan: PageFillPlan;
-      }
-    | undefined;
-
   async function collectFromTab(tabId: number) {
     await deps.ensureScript(tabId);
     const response = (await deps.sendToTab(tabId, {
@@ -84,7 +75,6 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
 
       if (request.type === 'offerNail:lock') {
         await deps.session.lock();
-        lastPlan = undefined;
         return { ok: true };
       }
 
@@ -95,7 +85,6 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
           deps.secrets,
           deps.clearLlmConfig,
         );
-        lastPlan = undefined;
         return { ok: true };
       }
 
@@ -119,14 +108,8 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
         const collected = await collectFromTab(tabId);
         const rules = await deps.repository.listSiteRules();
         const plan = planPageFill(collected.collection, data, rules);
-        lastPlan = { collection: collected.collection, plan };
-        return { ok: true, items: plan.items, resume: data };
-      }
-
-      if (request.type === 'offerNail:confirmFill') {
-        if (!lastPlan) return { ok: false, error: '请先扫描当前页面。' };
-        const tabId = await deps.getActiveTabId();
-        const fill = fillRequestFromPreview(request.items, lastPlan.plan);
+        const selected = plan.items.filter((item) => item.selected);
+        const fill = fillRequestFromPreview(selected, plan);
         const applied = (await deps.sendToTab(tabId, {
           type: 'offerNail:applyFill',
           ...fill,
@@ -140,19 +123,19 @@ export function createBackgroundHandler(deps: BackgroundFillDeps) {
                 : '填写失败，页面未被提交。',
           };
         }
-        const rules = rulesFromConfirmedFill(
-          lastPlan.collection,
-          request.items,
-          lastPlan.plan.scored,
+        const newRules = rulesFromConfirmedFill(
+          collected.collection,
+          selected,
+          plan.scored,
         );
         try {
           await Promise.all(
-            rules.map((rule) => deps.repository.writeSiteRule(rule)),
+            newRules.map((rule) => deps.repository.writeSiteRule(rule)),
           );
         } catch {
           // Filling succeeded; mapping persistence is best-effort.
         }
-        return applied;
+        return { ok: true, outcomes: applied.outcomes, resume: data };
       }
 
       if (request.type === 'offerNail:undoFill') {

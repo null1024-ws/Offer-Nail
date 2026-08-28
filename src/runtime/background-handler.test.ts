@@ -32,7 +32,7 @@ class MemoryMarkerStore implements SessionMarkerStore {
 }
 
 describe('background fill handler', () => {
-  it('unlocks, scans without writing, fills after confirm, and saves rules', async () => {
+  it('unlocks, scans and fills directly, then saves rules and can undo', async () => {
     const document = loadFixtureDocument();
     const content = createContentHandler(document);
     const repository = new VaultRepository({
@@ -57,16 +57,7 @@ describe('background fill handler', () => {
       'unlocked',
     );
     const scanned = await handle({ type: 'offerNail:scan' });
-    expect(scanned.ok && 'items' in scanned).toBe(true);
-    expect(
-      (document.getElementById('full-name') as HTMLInputElement).value,
-    ).toBe('');
-    if (!scanned.ok || !('items' in scanned)) throw new Error('scan failed');
-    const filled = await handle({
-      type: 'offerNail:confirmFill',
-      items: scanned.items.filter((item) => item.selected),
-    });
-    expect(filled.ok && 'outcomes' in filled).toBe(true);
+    expect(scanned.ok && 'outcomes' in scanned).toBe(true);
     expect(
       (document.getElementById('full-name') as HTMLInputElement).value,
     ).toBe('张三');

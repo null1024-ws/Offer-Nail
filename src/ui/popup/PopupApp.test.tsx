@@ -31,7 +31,7 @@ describe('PopupApp', () => {
     expect(openOptions).toHaveBeenCalledOnce();
   });
 
-  it('scans then confirms only after the user clicks', async () => {
+  it('scans and fills the page directly, then can undo', async () => {
     const resume = createEmptyResumeData();
     const sendMessage = vi.fn<
       (request: ExtensionRequest) => Promise<ExtensionResponse>
@@ -48,30 +48,6 @@ describe('PopupApp', () => {
         return {
           ok: true,
           resume,
-          items: [
-            {
-              sourceId: 'field:0',
-              fingerprint: 'input|text|fullName',
-              pageLabel: '姓名',
-              pageKind: 'text',
-              pageName: 'fullName',
-              pageValue: '',
-              inShadow: false,
-              fieldId: 'personal.fullName',
-              proposedValue: '张三',
-              confidence: 'high',
-              reasons: ['标签匹配'],
-              sensitive: false,
-              conflict: false,
-              selected: true,
-              mappingOptions: [{ fieldId: 'personal.fullName', label: '姓名' }],
-            },
-          ],
-        };
-      }
-      if (request.type === 'offerNail:confirmFill') {
-        return {
-          ok: true,
           outcomes: [
             {
               fingerprint: 'input|text|fullName',
@@ -79,21 +55,27 @@ describe('PopupApp', () => {
               previousValue: '',
             },
           ],
-          session: { pageSignature: 'sig', outcomes: [] },
         };
+      }
+      if (request.type === 'offerNail:undoFill') {
+        return { ok: true, undone: { ok: true } };
       }
       return { ok: false, error: 'unexpected' };
     });
 
     render(<PopupApp sendMessage={sendMessage} openOptions={vi.fn()} />);
     await userEvent.click(
-      await screen.findByRole('button', { name: '扫描当前页' }),
+      await screen.findByRole('button', { name: '扫描并填写' }),
     );
     expect(sendMessage).toHaveBeenCalledWith({
       type: 'offerNail:scan',
       variantId: undefined,
     });
-    await userEvent.click(screen.getByRole('button', { name: '确认填写' }));
+    expect(await screen.findByText('已直接填写')).toBeVisible();
     expect(screen.getByText('已填写')).toBeVisible();
+
+    await userEvent.click(screen.getByRole('button', { name: '撤销本次填写' }));
+    expect(sendMessage).toHaveBeenCalledWith({ type: 'offerNail:undoFill' });
+    expect(await screen.findByText('已恢复本次填写前的页面值。')).toBeVisible();
   });
 });

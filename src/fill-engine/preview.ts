@@ -146,22 +146,3 @@ export function selectedInstructions(
       value: item.proposedValue,
     }));
 }
-
-export function retargetPreviewItem(
-  item: FillPreviewItem,
-  fieldId: ResumeFieldId,
-  resume: ResumeData,
-): FillPreviewItem {
-  const sensitive = fieldCatalog[fieldId].sensitivity !== 'normal';
-  const proposedValue = formatProfileValue(
-    resolveProfileValue(resume, fieldId),
-  );
-  const next = {
-    ...item,
-    fieldId,
-    proposedValue,
-    sensitive,
-    unsupported: undefined,
-  };
-  return { ...next, selected: shouldAutoSelect(next) && item.selected };
-}
